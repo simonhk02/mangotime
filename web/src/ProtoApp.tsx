@@ -4,19 +4,20 @@ import { useMemo, useState } from "react";
 import { lunarShort } from "./lunar";
 
 type Screen =
-  | "month" | "weekly" | "create" | "eventDetail" | "noteEdit" | "memos" | "memoDetail"
+  | "splash" | "month" | "weekly" | "create" | "eventDetail" | "noteEdit" | "memos" | "memosEmpty" | "memoDetail"
   | "todos" | "album" | "feed" | "notices" | "other" | "profile" | "calendarList"
-  | "members" | "invite" | "settings" | "displaySettings" | "filterSettings"
-  | "notifSettings" | "noticeBoard" | "search" | "premium" | "login";
+  | "members" | "invite" | "settings" | "displaySettings" | "filterSettings" | "displayCalendar"
+  | "notifSettings" | "noticeBoard" | "noticeDetail" | "search" | "premium" | "premiumDetail" | "login"
+  | "helpHome" | "helpCategory" | "helpArticle" | "faq" | "contact" | "userGuide" | "monthPicker";
 
 const C = {
   orange: "#ff7043", green: "#10b981", blue: "#3b82f6", red: "#ef4444", purple: "#a855f7",
   ink: "#1a2332", soft: "#8a94a1", line: "#e4e7ec", bg: "#f7f8fa",
 };
 
-const MOCK_EVENTS = [
+const MOCK_EVENTS: { id: string; title: string; day: number; color: string; loc: string; time: string; attach?: number }[] = [
   { id: "1", title: "屋企人飯局", day: 18, color: C.green, loc: "酒樓", time: "19:00–22:00" },
-  { id: "2", title: "珠海兩日一夜", day: 18, color: C.blue, loc: "珠海", time: "全日" },
+  { id: "2", title: "珠海兩日一夜", day: 18, color: C.blue, loc: "珠海", time: "全日", attach: 2 },
   { id: "3", title: "打邊爐", day: 19, color: C.red, loc: "屋企", time: "19:30–23:00" },
   { id: "4", title: "網球", day: 20, color: C.orange, loc: "", time: "08:00–10:00" },
   { id: "5", title: "阿女家長日", day: 24, color: C.purple, loc: "學校", time: "14:00–16:00" },
@@ -41,14 +42,48 @@ const LABELS = [
 ];
 const WD = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
 
+// 幫助中心資料（對照 IMG_4703–4728）
+const HELP_CATS = [
+  { icon: "🌱", name: "給初次使用者", arts: ["想知道共享日曆的各功能（應用程序版）", "行程未被共享", "希望定期收到通知"] },
+  { icon: "👤", name: "帳戶管理", arts: ["想要註冊帳號", "因變更機型而希望繼承數據", "登入帳戶並使用現有資料", "想要從所有裝置登出", "我要刪除帳號／退出服務"] },
+  { icon: "📝", name: "創建/編輯事件", arts: ["想從圖片建立行程（掃描圖片）", "複製/刪除/編輯計劃", "輕鬆登錄行程", "每週〇曜日的行程登錄方法（重複設定）"] },
+  { icon: "📅", name: "關於日曆", arts: ["希望以時間單位顯示預定（垂直顯示）", "希望減少通知頻率（每天一次彙總通知）", "我想更改顏色"] },
+  { icon: "⚙️", name: "各種應用程序設置", arts: ["通知不到", "我想更改語言", "想了解通知的種類與頻率", "希望自動輸入標題"] },
+  { icon: "🛠", name: "實際使用", arts: ["想要新增或刪除相簿中的照片", "搜尋行程", "我要登錄或查看備忘錄"] },
+  { icon: "🔗", name: "將TimeTree與其他日曆一起使用", arts: ["想使用其他日曆（例如 Google 日曆）"] },
+  { icon: "🩹", name: "解決問題", arts: ["小工具未顯示行程", "顯示錯誤", "行事消失", "無法查看"] },
+  { icon: "💬", name: "其他話題", arts: ["關於聯絡客服的方法", "關於支援版本（OS/應用程式）"] },
+  { icon: "🌍", name: "關於公開行事曆［管理員］", arts: ["［管理者］取得公開行事曆中活動的二維碼並刊載於印刷品"] },
+];
+
+const ARTICLE_BODY: Record<string, string[]> = {
+  "小工具未顯示行程": ["請確認以下內容", "iOS / Android：確認行事曆已開啟同步", "確認小工具揀咗正確行事曆", "重新開機後再試"],
+  "因變更機型而希望繼承數據": ["為您介紹更換智能手機機型所需的步驟。", "1. 舊機：確認已註冊帳號並登入", "2. 新機：安裝 MangoTime 並登入同一帳號", "3. 資料會自動同步"],
+  "登入帳戶並使用現有資料": ["iOS / Android：喺登入頁輸入已註冊嘅電郵同密碼，即可沿用現有行事曆資料。"],
+  "每週〇曜日的行程登錄方法（重複設定）": ["新增活動 →「重複」→ 揀「每週」→ 揀星期幾。可以隨時單次修改或整個系列修改。"],
+  "想使用其他日曆（例如 Google 日曆）": ["設定 →「外部日曆」→ 連結 Google 帳戶。Google 日曆嘅行程會以唯讀方式顯示。"],
+  "行程未被共享": ["1. 行程登錄者登錄在「其他行事曆」上", "解決方法：請對方確認行程所屬行事曆，並確認你已加入該行事曆。"],
+  "我要刪除帳號／退出服務": ["帳號刪除、退出操作後將無法復原。退出操作後的資料將被完全刪除。"],
+  "搜尋行程": ["在『主行事曆』中，您加入的所有共享行事曆都將納入搜尋範圍。指定參加者或標籤可篩選。"],
+  "我要登錄或查看備忘錄": ["可作為簡單備忘錄、購物清單、想去的地方清單、待辦事項等使用。每條備忘錄都可以留言。"],
+  "想要新增或刪除相簿中的照片": ["相簿 → ＋上傳；長按照片可刪除。上傳檔案屬 Premium 功能。"],
+};
+
 export default function ProtoApp() {
-  const [screen, setScreen] = useState<Screen>("month");
+  const [screen, setScreen] = useState<Screen>("splash");
   const [toast, setToast] = useState("");
   const [openEventId, setOpenEventId] = useState<string | null>(null);
   const [openMemoId, setOpenMemoId] = useState<string | null>(null);
   const [showLabelPicker, setShowLabelPicker] = useState(false);
   const [lunarOn, setLunarOn] = useState(true);
   const [weekStart, setWeekStart] = useState(1); // 0=週日 1=週一
+  const [settingsTab, setSettingsTab] = useState<"設定" | "支援">("設定");
+  const [feedTab, setFeedTab] = useState<"行程" | "相簿">("行程");
+  const [helpCat, setHelpCat] = useState(HELP_CATS[0]);
+  const [article, setArticle] = useState("");
+  const [upsell, setUpsell] = useState(false); // Premium 上傳檔案彈窗
+  const [photoPerm, setPhotoPerm] = useState(false); // 相片權限彈窗
+  const [calPicker, setCalPicker] = useState<string[]>(["家庭日曆"]);
 
   const today = new Date();
   const cells = useMemo(() => {
@@ -145,14 +180,17 @@ export default function ProtoApp() {
   const MonthView = (
     <>
       <NavBar
-        title={`${today.getFullYear()}年${today.getMonth() + 1}月`}
+        title={`${today.getFullYear()}年${today.getMonth() + 1}月 ～`}
         left={<button className="m-back" onClick={() => setScreen("calendarList")}>家庭日曆 ▾</button>}
         right={<>
           <button className="m-icon" onClick={() => setScreen("search")}>🔍</button>
-          <button className="m-icon" onClick={() => note("今日")}>今日</button>
+          <button className="m-icon" onClick={() => setScreen("monthPicker")}>▾</button>
         </>
         }
       />
+      <div className="m-prembar" onClick={() => setScreen("premiumDetail")}>
+        ⭐ TimeTree Premium　<span>無廣告・上傳檔案 ›</span>
+      </div>
       <div className="m-seg">
         <button className={screen === "month" ? "on" : ""} onClick={() => setScreen("month")}>月曆</button>
         <button className={screen === "weekly" ? "on" : ""} onClick={() => setScreen("weekly")}>週曆</button>
@@ -171,7 +209,7 @@ export default function ProtoApp() {
                 {lunarOn && <span className="m-lunar">{lunarShort(c.date)}</span>}
               </div>
               {MOCK_EVENTS.filter((e) => !c.other && e.day === c.date.getDate()).map((e) => (
-                <div key={e.id} className="m-event" style={{ background: e.color }}>{e.title}</div>
+                <div key={e.id} className="m-event" style={{ background: e.color }}>{e.title}{e.attach ? ` 📎${e.attach}` : ""}</div>
               ))}
             </div>
           ))}
@@ -205,6 +243,15 @@ export default function ProtoApp() {
       <div className="m-phone">
         {toast && <div className="m-toast">{toast}</div>}
         <StatusBar />
+
+        {screen === "splash" && (
+          <div className="m-splash" onClick={() => setScreen("login")}>
+            <div className="m-logo">🥭</div>
+            <h1>MangoTime</h1>
+            <p>一齊夾時間</p>
+            <div className="m-sub">撳任何地方開始 ›</div>
+          </div>
+        )}
 
         {screen === "login" && (
           <div className="m-login">
@@ -292,11 +339,33 @@ export default function ProtoApp() {
         {screen === "feed" && (
           <>
             <NavBar title="最新動態" left={<button className="m-back" onClick={() => setScreen("calendarList")}>家庭日曆 ▾</button>} />
-            <div className="m-seg"><button className="on">行程</button><button onClick={() => setScreen("album")}>相簿</button></div>
+            <div className="m-seg">
+              <button className={feedTab === "行程" ? "on" : ""} onClick={() => setFeedTab("行程")}>行程</button>
+              <button className={feedTab === "相簿" ? "on" : ""} onClick={() => setFeedTab("相簿")}>相簿</button>
+            </div>
             <div className="m-scroll">
-              <div className="m-feed"><span className="m-avatar" style={{ background: C.orange }}>文</span><div><b>阿文</b> 新增咗「打邊爐」<div className="m-sub">10 分鐘前</div></div></div>
-              <div className="m-feed"><span className="m-avatar" style={{ background: C.green }}>婆</span><div><b>老婆</b> 改咗「屋企人飯局」時間<div className="m-sub">2 小時前</div></div></div>
-              <div className="m-feed"><span className="m-avatar" style={{ background: C.blue }}>女</span><div><b>阿女</b> 喺相簿上傳咗 3 張相<div className="m-sub">昨日</div></div></div>
+              {feedTab === "行程" && (
+                <>
+                  <div className="m-feedcard" onClick={() => openEvent("1")}>
+                    <div className="m-feedphoto">🍖</div>
+                    <div className="m-feedinfo">
+                      <b>（A房）BBQ 15人 17:00-23:00</b>
+                      <div className="m-sub">10月25日 週日 下午7:00</div>
+                      <div className="m-feedmeta"><span className="m-avatar sm" style={{ background: C.orange }}>文</span> 阿文 新增咗呢個行程</div>
+                    </div>
+                  </div>
+                  <div className="m-feed"><span className="m-avatar" style={{ background: C.green }}>婆</span><div><b>老婆</b> 改咗「屋企人飯局」時間<div className="m-sub">2 小時前</div></div></div>
+                  <div className="m-feed"><span className="m-avatar" style={{ background: C.blue }}>女</span><div><b>阿女</b> 喺相簿上傳咗 3 張相<div className="m-sub">昨日</div></div></div>
+                </>
+              )}
+              {feedTab === "相簿" && (
+                <div className="m-empty">
+                  <div style={{ fontSize: 40 }}>🖼</div>
+                  <b>無最新動態</b>
+                  <p className="m-sub">呢個行事曆仲未有相簿更新。</p>
+                  <button className="m-cta light" onClick={() => setScreen("album")}>去相簿 ›</button>
+                </div>
+              )}
             </div>
           </>
         )}
