@@ -32,7 +32,7 @@ targets:
           - UIInterfaceOrientationPortrait
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.simonlai.mangotime
+        PRODUCT_BUNDLE_IDENTIFIER: com.mangotime.app
         SWIFT_VERSION: "5.0"
         SWIFT_STRICT_CONCURRENCY: minimal
         GENERATE_INFOPLIST_FILE: NO
