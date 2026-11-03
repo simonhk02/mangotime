@@ -35,6 +35,16 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
   return data;
 }
 
+export type Calendar = {
+  id: string;
+  name: string;
+  coverImageUrl: string | null;
+  creatorId: string;
+  createdAt: string;
+  memberCount?: number;
+  myRole?: string;
+};
+
 export const api = {
   register: (email: string, password: string, displayName: string) =>
     call<{ user: User; token: string }>("POST", "/v1/auth/register", { email, password, displayName }),
@@ -44,4 +54,8 @@ export const api = {
   me: () => call<{ user: User }>("GET", "/v1/me"),
   updateMe: (patch: { displayName?: string; avatarUrl?: string | null }) =>
     call<{ user: User }>("PATCH", "/v1/me", patch),
+  listCalendars: () => call<{ calendars: Calendar[] }>("GET", "/v1/calendars"),
+  createCalendar: (name: string) => call<{ calendar: Calendar }>("POST", "/v1/calendars", { name }),
+  renameCalendar: (id: string, name: string) => call<{ calendar: Calendar }>("PATCH", `/v1/calendars/${id}`, { name }),
+  deleteCalendar: (id: string) => call<void>("DELETE", `/v1/calendars/${id}`),
 };

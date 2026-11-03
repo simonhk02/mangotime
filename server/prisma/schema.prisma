@@ -16,6 +16,8 @@ model User {
   passwordHash String
   createdAt    DateTime  @default(now())
   sessions     Session[]
+  memberships  CalendarMember[] @relation("Memberships")
+  createdCalendars Calendar[]   @relation("CreatedCalendars")
 }
 
 model Session {
@@ -25,4 +27,37 @@ model Session {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   expiresAt DateTime
+}
+
+// Task 1.2 — Calendar + membership (multi-tenant from day 1: every query is membership-scoped)
+model Calendar {
+  id            String           @id @default(cuid())
+  name          String
+  coverImageUrl String?
+  creatorId     String
+  creator       User             @relation("CreatedCalendars", fields: [creatorId], references: [id])
+  createdAt     DateTime         @default(now())
+  members       CalendarMember[]
+}
+
+model CalendarMember {
+  id         String   @id @default(cuid())
+  calendarId String
+  calendar   Calendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation("Memberships", fields: [userId], references: [id], onDelete: Cascade)
+  role       String   // "creator" | "member"
+  createdAt  DateTime @default(now())
+
+  @@unique([calendarId, userId])
+}
+
+// Durable event outbox — webhook dispatcher lands in 4.2; events are captured from day 1.
+model OutboxEvent {
+  id          String    @id @default(cuid())
+  type        String    // e.g. "calendar.created"
+  aggregateId String    // e.g. calendar id
+  payload     String    // JSON
+  createdAt   DateTime  @default(now())
+  deliveredAt DateTime?
 }

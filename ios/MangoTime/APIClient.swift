@@ -90,6 +90,41 @@ final class APIClient: ObservableObject {
 
 struct EmptyResponse: Decodable {}
 
+struct MTCalendar: Codable, Identifiable {
+    let id: String
+    let name: String
+    let coverImageUrl: String?
+    let creatorId: String
+    let memberCount: Int?
+    let myRole: String?
+}
+
+struct CalendarResponse: Codable { let calendar: MTCalendar }
+struct CalendarListResponse: Codable { let calendars: [MTCalendar] }
+
+extension APIClient {
+    func listCalendars() async throws -> [MTCalendar] {
+        let res: CalendarListResponse = try await request("GET", "/v1/calendars")
+        return res.calendars
+    }
+
+    func createCalendar(name: String) async throws -> MTCalendar {
+        struct Payload: Encodable { let name: String }
+        let res: CalendarResponse = try await request("POST", "/v1/calendars", body: Payload(name: name))
+        return res.calendar
+    }
+
+    func renameCalendar(id: String, name: String) async throws {
+        struct Payload: Encodable { let name: String }
+        let _: CalendarResponse = try await request("PATCH", "/v1/calendars/\(id)", body: Payload(name: name))
+    }
+
+    func deleteCalendar(id: String) async throws {
+        struct Empty: Encodable {}
+        let _: EmptyResponse = try await request("DELETE", "/v1/calendars/\(id)", body: Optional<Empty>.none)
+    }
+}
+
 // Type-erasure so any Encodable payload fits the request signature.
 struct AnyEncodable: Encodable {
     private let encodeFn: (Encoder) throws -> Void

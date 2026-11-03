@@ -13,9 +13,6 @@ struct ContentView: View {
             if let user = api.currentUser {
                 Text("你好，\(user.displayName)")
                     .font(.title3)
-                Text(user.email)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
             }
 
             Text(serverStatus)
@@ -23,7 +20,9 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
-            Button("登出") {
+            CalendarListView()
+
+            Button("登出（\(api.currentUser?.email ?? "")）") {
                 Task { await api.logout() }
             }
             .font(.footnote)

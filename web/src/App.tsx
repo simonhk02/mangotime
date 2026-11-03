@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, getToken, setToken, type User } from "./api";
 import Auth from "./Auth";
+import CalendarList from "./CalendarList";
 
 type State =
   | { status: "loading" }
@@ -46,14 +47,17 @@ export default function App() {
       )}
 
       {state.status === "authed" && (
-        <section className="profile">
-          <h2>你好，{state.user.displayName}</h2>
-          {state.user.avatarUrl && (
-            <img className="avatar" src={state.user.avatarUrl} alt="" width={64} height={64} />
-          )}
-          <p className="muted">{state.user.email}</p>
-          <button onClick={logout}>登出</button>
-        </section>
+        <>
+          <section className="profile">
+            <h2>你好，{state.user.displayName}</h2>
+            {state.user.avatarUrl && (
+              <img className="avatar" src={state.user.avatarUrl} alt="" width={64} height={64} />
+            )}
+            <p className="muted">{state.user.email}</p>
+            <button onClick={logout}>登出</button>
+          </section>
+          <CalendarList />
+        </>
       )}
     </main>
   );

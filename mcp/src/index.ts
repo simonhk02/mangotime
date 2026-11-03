@@ -1,7 +1,32 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
 
 const SERVER_URL = process.env.MANGOTIME_SERVER_URL ?? "http://localhost:8787";
+const TOKEN = process.env.MANGOTIME_TOKEN ?? "";
+
+async function api(method: string, path: string, body?: unknown) {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (TOKEN) headers["Authorization"] = `Bearer ${TOKEN}`;
+  const res = await fetch(`${SERVER_URL}${path}`, {
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${text}`);
+  return text ? JSON.parse(text) : {};
+}
+
+function ok(data: unknown) {
+  return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+}
+function fail(err: unknown) {
+  return {
+    content: [{ type: "text" as const, text: err instanceof Error ? err.message : String(err) }],
+    isError: true as const,
+  };
+}
 
 const server = new McpServer({ name: "mangotime", version: "0.1.0" });
 
@@ -34,6 +59,34 @@ server.registerTool(
         ],
         isError: true,
       };
+    }
+  },
+);
+
+// --- Task 1.2: calendar tools ---
+server.registerTool(
+  "list_calendars",
+  { description: "List MangoTime calendars the current token can see (name, id, memberCount, myRole)." },
+  async () => {
+    try {
+      return ok(await api("GET", "/v1/calendars"));
+    } catch (err) {
+      return fail(err);
+    }
+  },
+);
+
+server.registerTool(
+  "create_calendar",
+  {
+    description: "Create a new MangoTime calendar. Returns the created calendar with its id.",
+    inputSchema: { name: z.string().describe("Calendar name") },
+  },
+  async ({ name }) => {
+    try {
+      return ok(await api("POST", "/v1/calendars", { name }));
+    } catch (err) {
+      return fail(err);
     }
   },
 );
