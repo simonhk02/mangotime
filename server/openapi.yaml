@@ -1,0 +1,51 @@
+openapi: 3.0.3
+info:
+  title: MangoTime API
+  version: "0.1.0"
+  description: >
+    MangoTime shared-calendar API — v0 skeleton.
+    Web, iOS and MCP clients all talk to this REST API; this spec is the contract.
+servers:
+  - url: http://localhost:8787
+    description: Local dev (Mac mini)
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Liveness/readiness probe
+      tags: [meta]
+      responses:
+        "200":
+          description: Server is up
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, version]
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  version:
+                    type: string
+                    example: "0.1.0"
+  /v1/ping:
+    get:
+      operationId: ping
+      summary: API ping
+      tags: [meta]
+      responses:
+        "200":
+          description: Pong
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [pong]
+                properties:
+                  pong:
+                    type: boolean
+                    example: true
+tags:
+  - name: meta
+    description: Service metadata endpoints

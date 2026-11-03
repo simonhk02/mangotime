@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# SQLite data (server/data/mangotime.db, WAL/SHM sidecars)
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Env files (keep .env.example tracked)
+.env
+!.env.example
+
+# Logs / OS junk
+*.log
+.DS_Store
+
+# PM dashboard secret
+scripts/dashboard_token.txt

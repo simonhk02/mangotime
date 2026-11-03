@@ -1,0 +1,55 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+body {
+  margin: 0;
+}
+
+.shell {
+  max-width: 40rem;
+  margin: 4rem auto;
+  padding: 0 1.5rem;
+}
+
+h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.tagline {
+  opacity: 0.7;
+  margin-top: 0;
+}
+
+.health {
+  margin-top: 2rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid #8884;
+  border-radius: 0.75rem;
+}
+
+.health h2 {
+  margin-top: 0;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.6;
+}
+
+.dot {
+  display: inline-block;
+  width: 0.6em;
+  height: 0.6em;
+  border-radius: 50%;
+  margin-right: 0.4em;
+}
+
+.dot.ok {
+  background: #22c55e;
+}
+
+.dot.err {
+  background: #ef4444;
+}
