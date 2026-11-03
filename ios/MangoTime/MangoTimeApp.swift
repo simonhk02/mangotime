@@ -6,10 +6,8 @@ struct MangoTimeApp: App {
 
     var body: some Scene {
         WindowGroup {
-            // 原型模式：launch argument `-proto` 開啟 → 全 mock 畫面（對照參考圖）
-            if ProcessInfo.processInfo.arguments.contains("-proto") {
-                ProtoRootView()
-            } else {
+            // 現階段：預設行原型（TestFlight 驗畫面）；真 app 流程留喺 -real 後面
+            if ProcessInfo.processInfo.arguments.contains("-real") {
                 Group {
                     if api.token != nil {
                         ContentView()
@@ -23,6 +21,8 @@ struct MangoTimeApp: App {
                         try? await api.fetchMe()
                     }
                 }
+            } else {
+                ProtoRootView()
             }
         }
     }
