@@ -1,0 +1,56 @@
+# <AppName> CI — build for iOS Simulator on GitHub's macOS runners.
+# Phase 1: compile-only (no signing) to shake out errors fast.
+# Proven template — adapt ONLY the project/scheme names and this comment.
+name: iOS Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show available Xcode versions
+        run: |
+          ls /Applications | grep -i xcode || true
+          xcodebuild -version || true
+
+      - name: Select newest Xcode 26
+        run: |
+          XCODE_DIR=$(ls -d /Applications/Xcode*26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$XCODE_DIR" ]; then XCODE_DIR=$(ls -d /Applications/Xcode*.app | sort -V | tail -1); fi
+          echo "Using: $XCODE_DIR"
+          sudo xcode-select -s "$XCODE_DIR/Contents/Developer"
+          xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build for iOS Simulator (no signing)
+        run: |
+          set +e
+          xcodebuild -project <AppName>.xcodeproj -scheme <AppName> \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            build > build.log 2>&1
+          STATUS=$?
+          echo "===== UNIQUE ERRORS ====="
+          grep -E "error:" build.log | sed 's/^.*error:/error:/' | sort -u | head -40
+          echo "===== EXIT: $STATUS ====="
+          exit $STATUS
+
+      - name: Upload full build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          retention-days: 7

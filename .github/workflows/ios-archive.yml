@@ -1,0 +1,143 @@
+# MangoTime — archive, sign (automatic via App Store Connect API key),
+# export and upload straight to App Store Connect / TestFlight.
+name: iOS Archive & Upload
+
+on:
+  workflow_dispatch:
+
+jobs:
+  archive:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select newest Xcode 26
+        run: |
+          XCODE_DIR=$(ls -d /Applications/Xcode*26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$XCODE_DIR" ]; then XCODE_DIR=$(ls -d /Applications/Xcode*.app | sort -V | tail -1); fi
+          sudo xcode-select -s "$XCODE_DIR/Contents/Developer"
+          xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+        working-directory: ios
+
+      - name: Install ASC API key for xcodebuild
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8_B64 }}
+        run: |
+          mkdir -p ~/private_keys
+          echo "$ASC_KEY_P8_B64" | base64 -d > ~/private_keys/AuthKey_$ASC_KEY_ID.p8
+          chmod 600 ~/private_keys/AuthKey_$ASC_KEY_ID.p8
+          head -1 ~/private_keys/AuthKey_$ASC_KEY_ID.p8
+          tail -1 ~/private_keys/AuthKey_$ASC_KEY_ID.p8
+
+      - name: Setup keychain with reused distribution cert (avoid cert quota)
+        env:
+          DIST_KEY: ${{ secrets.DIST_KEY }}
+          DIST_CERT_B64: ${{ secrets.DIST_CERT_B64 }}
+        run: |
+          security create-keychain -p tempci ci.keychain
+          security default-keychain -s ci.keychain
+          security unlock-keychain -p tempci ci.keychain
+          printf '%s' "$DIST_KEY" > /tmp/dist.key
+          echo "$DIST_CERT_B64" | base64 -d > /tmp/dist.cer
+          security import /tmp/dist.key -k ci.keychain -P "" -A -t priv
+          security import /tmp/dist.cer -k ci.keychain -A
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k tempci ci.keychain
+          security find-identity -v -p codesigning ci.keychain || true
+
+      - name: Archive (automatic signing via ASC API key)
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          TEAM_ID: ${{ secrets.TEAM_ID }}
+        run: |
+          set +e
+          xcodebuild -project ios/MangoTime.xcodeproj -scheme MangoTime \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/MangoTime.xcarchive \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_$ASC_KEY_ID.p8 \
+            -authenticationKeyID $ASC_KEY_ID \
+            -authenticationKeyIssuerID $ASC_ISSUER_ID \
+            DEVELOPMENT_TEAM=$TEAM_ID \
+            archive > archive.log 2>&1
+          STATUS=$?
+          echo "===== archive exit: $STATUS ====="
+          grep -E "error:|warning: .*signing|Provisioning" archive.log | sort -u | head -25
+          exit $STATUS
+
+      - name: Export IPA (no ASC auth)
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          TEAM_ID: ${{ secrets.TEAM_ID }}
+        run: |
+          cat > ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>export</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>teamID</key><string>$TEAM_ID</string>
+            <key>uploadSymbols</key><true/>
+          </dict>
+          </plist>
+          EOF
+          set +e
+          xcodebuild -exportArchive \
+            -archivePath build/MangoTime.xcarchive \
+            -exportPath build/export \
+            -exportOptionsPlist ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_$ASC_KEY_ID.p8 \
+            -authenticationKeyID $ASC_KEY_ID \
+            -authenticationKeyIssuerID $ASC_ISSUER_ID > export.log 2>&1
+          STATUS=$?
+          echo "===== export exit: $STATUS ====="
+          grep -iE "error:" export.log | sort -u | head -10
+          ls -la build/export 2>/dev/null
+          exit $STATUS
+
+      - name: Upload IPA via fastlane pilot (REST API JWT — verified working)
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          brew upgrade fastlane 2>/dev/null || brew install fastlane
+          hash -r
+          cat > /tmp/asc_key.json <<EOF
+          {"key_id":"$ASC_KEY_ID","issuer_id":"$ASC_ISSUER_ID","key_filepath":"$HOME/private_keys/AuthKey_$ASC_KEY_ID.p8"}
+          EOF
+          # fastlane 2.241 wants inline "key" content — rebuild JSON with jq
+          KEY_CONTENT=$(cat ~/private_keys/AuthKey_$ASC_KEY_ID.p8)
+          jq -n --arg kid "$ASC_KEY_ID" --arg iss "$ASC_ISSUER_ID" --arg key "$KEY_CONTENT" \
+            '{key_id:$kid, issuer_id:$iss, key:$key}' > /tmp/asc_key.json
+          IPA=$(ls build/export/*.ipa | head -1)
+          echo "Uploading: $IPA"
+          set -o pipefail
+          fastlane pilot upload \
+            --ipa "$IPA" \
+            --api_key_path /tmp/asc_key.json \
+            --skip_waiting_for_build_processing true 2>&1 | tee pilot.log
+          STATUS=${PIPESTATUS[0]}
+          echo "===== pilot exit: $STATUS ====="
+          exit $STATUS
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mangotime-archive-logs
+          path: |
+            archive.log
+            export.log
+            pilot.log
+          retention-days: 7

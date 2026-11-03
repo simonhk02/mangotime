@@ -21,3 +21,9 @@ data/
 
 # PM dashboard secret
 scripts/dashboard_token.txt
+
+# iOS build artifacts (CI generates)
+build/
+*.xcarchive
+*.ipa
+ios/MangoTime.xcodeproj/
