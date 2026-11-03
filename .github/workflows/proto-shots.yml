@@ -1,0 +1,102 @@
+name: proto-shots
+
+on:
+  workflow_dispatch:
+
+jobs:
+  shots:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install xcodegen (binary)
+        run: |
+          cd /tmp
+          curl -sL -o xcodegen.zip https://github.com/yonaskolb/XcodeGen/releases/download/2.46.0/xcodegen.zip
+          unzip -oq xcodegen.zip -d xg
+          echo "/tmp/xg/xcodegen/bin" >> $GITHUB_PATH
+          /tmp/xg/xcodegen/bin/xcodegen --version
+
+      - name: Generate project
+        run: |
+          cd ios
+          xcodegen generate
+
+      - name: Resolve simulator
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin); out=''; [out := dev['udid'] for rt,devs in d['devices'].items() if 'iOS' in rt for dev in devs if dev['name'].startswith('iPhone')]; print(out)" | head -1)
+          echo "udid=$UDID" >> $GITHUB_OUTPUT
+          xcrun simctl boot "$UDID" || true
+
+      - name: Build for simulator
+        run: |
+          cd ios
+          xcodebuild -project MangoTime.xcodeproj -scheme MangoTime \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
+            -configuration Debug -derivedDataPath /tmp/dd build
+
+      - name: Screenshot all proto screens
+        run: |
+          UDID="${{ steps.sim.outputs.udid }}"
+          APP=$(find /tmp/dd/Build/Products/Debug-iphonesimulator -name "MangoTime.app" -maxdepth 1)
+          OUT=/tmp/shots; mkdir -p "$OUT"
+          xcrun simctl install "$UDID" "$APP"
+          shoot() {
+            outfile="$1"; scr="$2"; shift 2
+            xcrun simctl terminate "$UDID" com.mangotime.app 2>/dev/null || true
+            xcrun simctl launch "$UDID" com.mangotime.app -proto -screen "$scr" "$@" >/dev/null 2>&1 || true
+            sleep 2
+            xcrun simctl io "$UDID" screenshot "$OUT/${outfile}.png" >/dev/null 2>&1
+            echo "shot: $outfile"
+          }
+          shoot splash splash
+          shoot login login
+          shoot month month
+          shoot month_nl month -lunar 0
+          shoot weekly weekly
+          shoot calendarList calendarList
+          shoot monthPicker monthPicker
+          shoot create create
+          shoot noteEdit noteEdit
+          shoot eventDetail eventDetail
+          shoot search search
+          shoot feed_events feed -feedtab 0
+          shoot feed_album feed -feedtab 1
+          shoot notices notices
+          shoot other other
+          shoot profile profile
+          shoot memos memos
+          shoot memosEmpty memosEmpty
+          shoot memoDetail memoDetail
+          shoot todos todos
+          shoot album album
+          shoot members members
+          shoot invite invite
+          shoot settings_main settings -settingstab 0
+          shoot settings_support settings -settingstab 1
+          shoot displaySettings displaySettings
+          shoot filterSettings filterSettings
+          shoot displayCalendar displayCalendar
+          shoot notifSettings notifSettings
+          shoot noticeBoard noticeBoard
+          shoot noticeDetail noticeDetail
+          shoot premium premium
+          shoot premiumDetail premiumDetail
+          shoot helpHome helpHome
+          shoot helpCategory helpCategory
+          shoot helpArticle helpArticle
+          shoot faq faq
+          shoot contact contact
+          shoot userGuide userGuide
+          shoot upsell month -upsell 1
+          shoot photoperm album -photoperm 1
+          ls "$OUT" | wc -l
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: proto-shots
+          path: /tmp/shots/*.png
+          retention-days: 14
