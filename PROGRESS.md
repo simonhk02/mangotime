@@ -13,8 +13,8 @@
 | 1.1 | Auth＋profile | 🟨 待驗收 | email 註冊/登入/登出/profile API 8/8 tests pass；Web 登入註冊頁（build green）；iOS 登入頁（CLT typecheck 0 errors）。Google/Apple 登入留返 Phase 1 尾（要開 OAuth app） | |
 | 1.2 | Calendar CRUD | 🟨 待驗收 | 開/改/刪/列出日曆 API（membership-scoped，非成員 404 唔洩存在）；每個改動寫 OutboxEvent（webhook 4.2 用）；16/16 tests；Web 日曆清單頁 + iOS CalendarListView（CLT 0 errors）；MCP list_calendars/create_calendar 經 stdio 實測開咗個日曆出嚟 | |
 | 1.3 | Members & invite | ⬜ | | |
-| 1.4 | Event CRUD | ⬜ | | |
-| 1.5 | Month view＋calendar overlay | ⬜ | | |
+| 1.4 | Event CRUD | 🟨 待驗收 | 全欄位 API（repeat/label/note/url/location/remind）、範圍查詢、權限；24/24 tests；outbox event.* | |
+| 1.5 | Month view＋calendar overlay | 🟨 待驗收 | TimeTree 1:1 版面（頂欄/行事曆清單/右直欄）；**農曆雙行日期**（對到參考圖）；雙擊開活動表；獨睇/toggle overlay | |
 | 2.1 | Event comments（chat＋貼相） | ⬜ | | |
 | 2.2 | Memo | ⬜ | | |
 | 2.3 | To-Do List | ⬜ | | |
