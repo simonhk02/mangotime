@@ -46,6 +46,85 @@ paths:
                   pong:
                     type: boolean
                     example: true
+  /v1/auth/register:
+    post:
+      operationId: register
+      summary: Register with email + password
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, displayName]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8 }
+                displayName: { type: string }
+      responses:
+        "201": { description: "Created; returns { user, token }" }
+        "400": { description: Validation error }
+        "409": { description: Email already registered }
+  /v1/auth/login:
+    post:
+      operationId: login
+      summary: Login with email + password
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        "200": { description: "OK; returns { user, token }" }
+        "401": { description: Invalid credentials }
+  /v1/auth/logout:
+    post:
+      operationId: logout
+      summary: Invalidate the current session token
+      tags: [auth]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "204": { description: Logged out }
+  /v1/me:
+    get:
+      operationId: getMe
+      summary: Current user profile
+      tags: [auth]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Current user }
+        "401": { description: Unauthorized }
+    patch:
+      operationId: updateMe
+      summary: Update displayName / avatarUrl
+      tags: [auth]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName: { type: string }
+                avatarUrl: { type: string, nullable: true }
+      responses:
+        "200": { description: Updated user }
+        "400": { description: Nothing to update }
+        "401": { description: Unauthorized }
 tags:
   - name: meta
     description: Service metadata endpoints
+  - name: auth
+    description: Task 1.1 — registration, login, session tokens, profile
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer

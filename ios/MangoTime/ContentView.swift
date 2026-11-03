@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject private var api: APIClient
     @State private var serverStatus = "Checking server…"
 
     var body: some View {
@@ -9,10 +10,23 @@ struct ContentView: View {
                 .font(.largeTitle)
                 .fontWeight(.bold)
 
+            if let user = api.currentUser {
+                Text("你好，\(user.displayName)")
+                    .font(.title3)
+                Text(user.email)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
             Text(serverStatus)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
+
+            Button("登出") {
+                Task { await api.logout() }
+            }
+            .font(.footnote)
         }
         .padding()
         .onAppear {
@@ -23,9 +37,7 @@ struct ContentView: View {
     }
 
     private func checkHealth() async {
-        // Mac mini on the home LAN (server/ runs on port 8787).
-        // localhost on a physical device would point at the device itself.
-        guard let url = URL(string: "http://192.168.0.145:8787/health") else {
+        guard let url = URL(string: "\(api.baseURL)/health") else {
             serverStatus = "Invalid server URL"
             return
         }
@@ -42,5 +54,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    ContentView().environmentObject(APIClient.shared)
 }

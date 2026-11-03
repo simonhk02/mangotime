@@ -7,11 +7,22 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// v0 User model — real auth lands in task 1.1
+// Auth (task 1.1): passwordHash + sessions
 model User {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  displayName String
-  avatarUrl   String?
-  createdAt   DateTime @default(now())
+  id           String    @id @default(cuid())
+  email        String    @unique
+  displayName  String
+  avatarUrl    String?
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  sessions     Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
 }
