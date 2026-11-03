@@ -53,3 +53,130 @@ h1 {
 .dot.err {
   background: #ef4444;
 }
+
+/* --- MangoTime app styles --- */
+.shell { max-width: 56rem; }
+
+.auth, .profile, .calendars, .monthview {
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid #8884;
+  border-radius: 0.75rem;
+}
+.auth h2, .profile h2, .calendars h2 { margin-top: 0; }
+
+.auth form, .modal form { display: grid; gap: 0.75rem; }
+.auth label, .modal label { display: grid; gap: 0.25rem; font-size: 0.9rem; }
+input, select {
+  padding: 0.5rem 0.6rem; border: 1px solid #8886; border-radius: 0.5rem;
+  font: inherit; background: transparent; color: inherit;
+}
+button {
+  font: inherit; padding: 0.45rem 0.9rem; border: 1px solid #8886;
+  border-radius: 0.5rem; background: transparent; color: inherit; cursor: pointer;
+}
+button.primary, .auth button[type="submit"] { background: #f59e0b; border-color: #f59e0b; color: #111; font-weight: 600; }
+button.danger { color: #ef4444; border-color: #ef444480; }
+.error { color: #ef4444; font-size: 0.85rem; margin: 0; }
+.muted { opacity: 0.6; font-size: 0.85rem; }
+.switch { font-size: 0.85rem; opacity: 0.8; }
+.switch button { border: none; color: #3b82f6; padding: 0; }
+
+.calendars ul { list-style: none; padding: 0; margin: 0.75rem 0 0; }
+.calendars li { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0; border-top: 1px solid #8882; }
+.cal-open { border: none; color: #3b82f6; font-weight: 600; padding: 0; font-size: 1rem; }
+.calendars .actions { margin-left: auto; display: flex; gap: 0.5rem; }
+.create-cal { display: flex; gap: 0.5rem; }
+.create-cal input { flex: 1; }
+
+/* month view */
+.mv-header { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.mv-header h2 { margin: 0; font-size: 1.2rem; }
+.mv-header .today { margin-left: auto; }
+.mv-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px;
+  background: #8883; border: 1px solid #8883; border-radius: 0.5rem;
+  overflow: hidden; margin-top: 0.75rem;
+}
+.mv-weekday { background: #8881; text-align: center; font-size: 0.75rem; padding: 0.35rem 0; font-weight: 600; }
+.mv-cell { background: Canvas; min-height: 5.2rem; padding: 0.25rem; display: flex; flex-direction: column; gap: 2px; }
+.mv-cell.empty { background: #8881; }
+.mv-cell.today { outline: 2px solid #f59e0b; outline-offset: -2px; }
+.mv-daynum { font-size: 0.75rem; opacity: 0.7; }
+.mv-event {
+  border: none; color: #fff; font-size: 0.7rem; padding: 1px 6px; border-radius: 4px;
+  text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;
+}
+
+/* modal */
+.modal-backdrop {
+  position: fixed; inset: 0; background: #0008; display: grid; place-items: center; z-index: 10;
+}
+.modal {
+  background: Canvas; color: CanvasText; border-radius: 0.75rem; padding: 1.25rem;
+  width: min(26rem, 92vw); max-height: 90vh; overflow: auto;
+}
+.modal h3 { margin-top: 0; }
+.modal .row.buttons { display: flex; gap: 0.5rem; justify-content: flex-end; }
+.modal label.row { display: flex; align-items: center; gap: 0.5rem; }
+
+/* --- TimeTree 1:1 版面 --- */
+.tt-shell { max-width: none; margin: 0; }
+.tt-userbar { display: flex; justify-content: flex-end; align-items: center; gap: 0.75rem; font-size: 0.85rem; opacity: 0.85; }
+.tt { border: 1px solid #8883; border-radius: 0.75rem; overflow: hidden; background: Canvas; }
+.tt-top {
+  display: flex; align-items: center; gap: 1rem; padding: 0.6rem 1rem;
+  border-bottom: 1px solid #8883; background: Canvas;
+}
+.tt-create { background: #ff7043; border-color: #ff7043; color: #fff; font-weight: 600; }
+.tt-nav { display: flex; align-items: center; gap: 0.5rem; }
+.tt-nav strong { min-width: 7.5rem; text-align: center; }
+.tt-today { font-size: 0.85rem; }
+.tt-topright { margin-left: auto; display: flex; gap: 0.35rem; }
+.tt-topright button.on { background: #333; color: #fff; }
+.tt-body { display: grid; grid-template-columns: 220px 1fr 56px; min-height: 70vh; }
+
+/* 左側欄 */
+.tt-left { border-right: 1px solid #8883; padding: 0.75rem; }
+.tt-calhead { font-size: 0.85rem; font-weight: 700; display: flex; justify-content: space-between; opacity: 0.8; }
+.tt-count { font-weight: 400; opacity: 0.6; font-size: 0.75rem; }
+.tt-tabs { font-size: 0.8rem; margin: 0.5rem 0; opacity: 0.7; }
+.tt-tabs .on { font-weight: 700; border-bottom: 2px solid #ff7043; }
+.tt-calcard { display: flex; align-items: center; padding: 0.4rem 0.25rem; border-radius: 0.4rem; }
+.tt-calcard.off { opacity: 0.4; }
+.tt-calname { flex: 1; text-align: left; border: none; padding: 0.25rem; font-weight: 600; display: flex; align-items: center; gap: 0.4rem; }
+.tt-dot { width: 10px; height: 10px; border-radius: 50%; background: #ff7043; display: inline-block; flex: none; }
+.tt-solo { border: none; padding: 0 0.25rem; opacity: 0.5; }
+.tt-solo.on { opacity: 1; color: #ff7043; }
+.tt-addcal { width: 100%; margin-top: 0.5rem; border: 1px dashed #8885; color: #ff7043; font-weight: 600; }
+
+/* 中間月曆 */
+.tt-main { padding: 0.5rem 0.75rem; }
+.tt-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: #8882; border: 1px solid #8882; }
+.tt-weekday { background: Canvas; text-align: center; font-size: 0.75rem; padding: 0.4rem 0; font-weight: 600; border-bottom: 1px solid #8882; }
+.tt-cell { background: Canvas; min-height: 5.6rem; padding: 0.3rem 0.35rem; display: flex; flex-direction: column; gap: 2px; cursor: cell; }
+.tt-cell.other { opacity: 0.35; }
+.tt-cell.today { outline: 2px solid #ff7043; outline-offset: -2px; }
+.tt-dayrow { display: flex; align-items: baseline; gap: 0.35rem; }
+.tt-day { font-size: 0.95rem; font-weight: 600; }
+.tt-lunar { font-size: 0.62rem; opacity: 0.55; }
+.tt-event {
+  color: #fff; font-size: 0.72rem; padding: 1px 6px; border-radius: 4px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* 右邊直欄 */
+.tt-right { border-left: 1px solid #8883; display: flex; flex-direction: column; align-items: center; padding-top: 0.75rem; gap: 0.75rem; }
+.tt-right button { border: none; font-size: 1.15rem; opacity: 0.45; cursor: not-allowed; background: none; }
+
+/* 新增活動表（對照 TimeTree 表單次序） */
+.tt-form { width: min(28rem, 94vw); }
+.tt-form-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+.tt-x { border: none; font-size: 1.4rem; background: none; }
+.tt-title { font-size: 1.05rem; font-weight: 600; border: none; border-bottom: 1px solid #8884; border-radius: 0; padding: 0.5rem 0; }
+.tt-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; font-size: 0.92rem; }
+.tt-row input[type="date"], .tt-row input[type="time"], .tt-row select, .tt-row input:not([type="checkbox"]) { max-width: 15rem; }
+.tt-labelpick { border: 1px solid #8885; display: flex; align-items: center; gap: 0.4rem; }
+.tt-labels { display: grid; gap: 0.25rem; margin: 0.25rem 0 0.5rem; }
+.tt-labels button { display: flex; align-items: center; gap: 0.5rem; border: 1px solid #8884; text-align: left; }
+.tt-labels button.on { border-color: #ff7043; background: #ff704314; }

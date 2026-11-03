@@ -58,4 +58,25 @@ export const api = {
   createCalendar: (name: string) => call<{ calendar: Calendar }>("POST", "/v1/calendars", { name }),
   renameCalendar: (id: string, name: string) => call<{ calendar: Calendar }>("PATCH", `/v1/calendars/${id}`, { name }),
   deleteCalendar: (id: string) => call<void>("DELETE", `/v1/calendars/${id}`),
+  listEvents: (calendarId: string, from: string, to: string) =>
+    call<{ events: CalEvent[] }>("GET", `/v1/calendars/${calendarId}/events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`),
+  createEvent: (calendarId: string, payload: Partial<CalEvent> & { title: string; startsAt: string }) =>
+    call<{ event: CalEvent }>("POST", `/v1/calendars/${calendarId}/events`, payload),
+  deleteEvent: (id: string) => call<void>("DELETE", `/v1/events/${id}`),
+};
+
+export type CalEvent = {
+  id: string;
+  calendarId: string;
+  title: string;
+  allDay: boolean;
+  startsAt: string;
+  endsAt: string | null;
+  repeatRule: string;
+  remindMin: number | null;
+  labelColor: string | null;
+  note: string | null;
+  url: string | null;
+  location: string | null;
+  creatorId: string;
 };

@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { PrismaClient } from "@prisma/client";
 import { registerAuthRoutes } from "./auth.js";
 import { registerCalendarRoutes } from "./calendars.js";
+import { registerEventRoutes } from "./events.js";
 
 const VERSION = "0.1.0";
 
@@ -33,6 +34,7 @@ export async function buildApp(prisma?: PrismaClient): Promise<FastifyInstance> 
 
   registerAuthRoutes(app, db);
   registerCalendarRoutes(app, db);
+  registerEventRoutes(app, db);
 
   app.addHook("onClose", async () => {
     await db.$disconnect();

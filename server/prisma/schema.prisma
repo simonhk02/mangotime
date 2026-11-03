@@ -18,6 +18,7 @@ model User {
   sessions     Session[]
   memberships  CalendarMember[] @relation("Memberships")
   createdCalendars Calendar[]   @relation("CreatedCalendars")
+  createdEvents    Event[]      @relation("CreatedEvents")
 }
 
 model Session {
@@ -38,6 +39,7 @@ model Calendar {
   creator       User             @relation("CreatedCalendars", fields: [creatorId], references: [id])
   createdAt     DateTime         @default(now())
   members       CalendarMember[]
+  events        Event[]
 }
 
 model CalendarMember {
@@ -60,4 +62,27 @@ model OutboxEvent {
   payload     String    // JSON
   createdAt   DateTime  @default(now())
   deliveredAt DateTime?
+}
+
+// Task 1.4 — Event
+model Event {
+  id         String   @id @default(cuid())
+  calendarId String
+  calendar   Calendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+  title      String
+  allDay     Boolean  @default(false)
+  startsAt   DateTime
+  endsAt     DateTime?
+  repeatRule String   @default("none") // none|daily|weekly|monthly|yearly
+  remindMin  Int?     // minutes before
+  labelColor String?  // e.g. "emerald"
+  note       String?
+  url        String?
+  location   String?
+  creatorId  String
+  creator    User     @relation("CreatedEvents", fields: [creatorId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([calendarId, startsAt])
 }
