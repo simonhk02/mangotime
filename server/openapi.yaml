@@ -118,11 +118,82 @@ paths:
         "200": { description: Updated user }
         "400": { description: Nothing to update }
         "401": { description: Unauthorized }
+  /v1/calendars:
+    post:
+      operationId: createCalendar
+      summary: Create calendar (creator membership auto-created; emits calendar.created)
+      tags: [calendar]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                coverImageUrl: { type: string }
+      responses:
+        "201": { description: Created }
+        "400": { description: name missing }
+        "401": { description: Unauthorized }
+    get:
+      operationId: listCalendars
+      summary: List calendars the caller is a member of
+      tags: [calendar]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: "{ calendars: [...] } — membership-scoped" }
+        "401": { description: Unauthorized }
+  /v1/calendars/{id}:
+    get:
+      operationId: getCalendar
+      summary: Get one calendar (members only; 404 for non-members)
+      tags: [calendar]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Calendar }
+        "404": { description: Not a member / not found }
+    patch:
+      operationId: updateCalendar
+      summary: Rename / change cover (creator only; emits calendar.updated)
+      tags: [calendar]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                coverImageUrl: { type: string, nullable: true }
+      responses:
+        "200": { description: Updated }
+        "403": { description: Not the creator }
+        "404": { description: Not a member / not found }
+    delete:
+      operationId: deleteCalendar
+      summary: Delete calendar (creator only; emits calendar.deleted)
+      tags: [calendar]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Deleted }
+        "403": { description: Not the creator }
+        "404": { description: Not a member / not found }
 tags:
   - name: meta
     description: Service metadata endpoints
   - name: auth
     description: Task 1.1 — registration, login, session tokens, profile
+  - name: calendar
+    description: Task 1.2 — calendar CRUD (membership-scoped; mutations emit OutboxEvent)
 components:
   securitySchemes:
     bearerAuth:

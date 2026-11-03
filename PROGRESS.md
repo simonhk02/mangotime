@@ -11,7 +11,7 @@
 | 0.2 | 架構定案（docs/ARCHITECTURE.md） | ✅ 完成 | Simon approve 2026-11-02；多用戶同步原則已補入 | 2026-11-02 |
 | 0.3 | 項目骨架＋CI＋VPS 進度 dashboard | ✅ 完成 | CI green；iOS build 1 已上 TestFlight（2026-11-03，state VALID） | 2026-11-03 |
 | 1.1 | Auth＋profile | 🟨 待驗收 | email 註冊/登入/登出/profile API 8/8 tests pass；Web 登入註冊頁（build green）；iOS 登入頁（CLT typecheck 0 errors）。Google/Apple 登入留返 Phase 1 尾（要開 OAuth app） | |
-| 1.2 | Calendar CRUD | ⬜ | | |
+| 1.2 | Calendar CRUD | 🟨 待驗收 | 開/改/刪/列出日曆 API（membership-scoped，非成員 404 唔洩存在）；每個改動寫 OutboxEvent（webhook 4.2 用）；16/16 tests；Web 日曆清單頁 + iOS CalendarListView（CLT 0 errors）；MCP list_calendars/create_calendar 經 stdio 實測開咗個日曆出嚟 | |
 | 1.3 | Members & invite | ⬜ | | |
 | 1.4 | Event CRUD | ⬜ | | |
 | 1.5 | Month view＋calendar overlay | ⬜ | | |
