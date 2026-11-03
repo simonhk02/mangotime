@@ -189,7 +189,7 @@ export default function ProtoApp() {
         }
       />
       <div className="m-prembar" onClick={() => setScreen("premiumDetail")}>
-        ⭐ TimeTree Premium　<span>無廣告・上傳檔案 ›</span>
+        ⭐ MangoTime Premium　<span>無廣告・上傳檔案 ›</span>
       </div>
       <div className="m-seg">
         <button className={screen === "month" ? "on" : ""} onClick={() => setScreen("month")}>月曆</button>

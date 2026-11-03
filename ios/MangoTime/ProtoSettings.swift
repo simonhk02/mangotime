@@ -121,7 +121,7 @@ struct ProtoNoticeBoard: View {
         PSheet(title: "公告", onBack: { s.screen = .other }) {
             Button { s.screen = .noticeDetail } label: {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("大家的評價將使 TimeTree 成長茁壯。").bold().foregroundStyle(.primary)
+                    Text("大家的評價將使 MangoTime 成長茁壯。").bold().foregroundStyle(.primary)
                     Text("For Public：歡迎喺 App Store 留個評價…").font(.caption).foregroundStyle(PT.soft)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -144,7 +144,7 @@ struct ProtoNoticeDetail: View {
     @EnvironmentObject var s: ProtoState
     var body: some View {
         PSheet(title: "公告", onBack: { s.screen = .noticeBoard }) {
-            Text("大家的評價將使 TimeTree 成長茁壯。").font(.title3).bold().padding(.top, 12)
+            Text("大家的評價將使 MangoTime 成長茁壯。").font(.title3).bold().padding(.top, 12)
             Text("""
             For Public
 
@@ -188,8 +188,8 @@ struct ProtoPremium: View {
 struct ProtoPremiumDetail: View {
     @EnvironmentObject var s: ProtoState
     var body: some View {
-        PSheet(title: "TimeTree Premium", onBack: { s.screen = .month }) {
-            Text("什麽是 TimeTree Premium？").font(.title3).bold().padding(.top, 12)
+        PSheet(title: "MangoTime Premium", onBack: { s.screen = .month }) {
+            Text("什麽是 MangoTime Premium？").font(.title3).bold().padding(.top, 12)
             premiumRow(icon: "🚫", title: "無廣告", sub: "移除所有廣告，介面更乾淨")
             premiumRow(icon: "📎", title: "上傳檔案", sub: "活動同備忘錄可以附加 PDF、文件")
             premiumRow(icon: "🏷", title: "更多標籤色", sub: "解鎖全部標籤顏色")

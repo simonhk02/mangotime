@@ -85,7 +85,7 @@ struct ProtoFAQ: View {
     ]
     var body: some View {
         PSheet(title: "常見問題", onBack: { s.screen = .settings }) {
-            Text("TimeTree 常見問題集").font(.caption).foregroundStyle(PT.soft)
+            Text("MangoTime 常見問題集").font(.caption).foregroundStyle(PT.soft)
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 8)
             ForEach(faqs, id: \.self) { q in
                 Button { s.screen = .helpArticle(q.replacingOccurrences(of: "我要如何更換手機？", with: "因變更機型而希望繼承數據")) } label: {

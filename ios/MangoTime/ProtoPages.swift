@@ -115,7 +115,7 @@ struct ProtoOther: View {
                     .buttonStyle(.plain)
                     Button { s.screen = .premiumDetail } label: {
                         HStack {
-                            Text("⭐ TimeTree Premium").bold()
+                            Text("⭐ MangoTime Premium").bold()
                             Spacer()
                             Text("開始月付HK$23.00的無廣告方案！免費使用1月 ›").font(.caption).foregroundStyle(PT.soft).lineLimit(1)
                         }

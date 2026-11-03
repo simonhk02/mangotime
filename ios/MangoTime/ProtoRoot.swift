@@ -257,7 +257,7 @@ struct PremiumUpsell: View {
             Color.black.opacity(0.4).ignoresSafeArea().onTapGesture { s.upsell = false }
             VStack(spacing: 12) {
                 Text("📎").font(.system(size: 40))
-                Text("使用 TimeTree 高級版上傳文件").font(.headline)
+                Text("使用 MangoTime 高級版上傳文件").font(.headline)
                 Text("並隨時確認").font(.subheadline).foregroundStyle(PT.soft)
                 Text("您有這樣的煩惱嗎？\n孩子學校的通知書、活動嘅 PDF…").font(.footnote).foregroundStyle(PT.soft).multilineTextAlignment(.center)
                 Button { s.upsell = false; s.screen = .premiumDetail } label: {

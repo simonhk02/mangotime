@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 原型主題色（對照 TimeTree）
+/// 原型主題色
 enum PT {
     static let orange = Color(red: 1.0, green: 0.44, blue: 0.26)   // #FF7043
     static let green = Color(red: 0.06, green: 0.73, blue: 0.51)   // #10B981
@@ -81,7 +81,7 @@ enum Mock {
         .init(id: "c4", icon: "📅", name: "關於日曆", arts: ["希望以時間單位顯示預定（垂直顯示）","希望減少通知頻率（每天一次彙總通知）","我想更改顏色"]),
         .init(id: "c5", icon: "⚙️", name: "各種應用程序設置", arts: ["通知不到","我想更改語言","想了解通知的種類與頻率","希望自動輸入標題"]),
         .init(id: "c6", icon: "🛠", name: "實際使用", arts: ["想要新增或刪除相簿中的照片","搜尋行程","我要登錄或查看備忘錄"]),
-        .init(id: "c7", icon: "🔗", name: "將TimeTree與其他日曆一起使用", arts: ["想使用其他日曆（例如 Google 日曆）"]),
+        .init(id: "c7", icon: "🔗", name: "將MangoTime與其他日曆一起使用", arts: ["想使用其他日曆（例如 Google 日曆）"]),
         .init(id: "c8", icon: "🩹", name: "解決問題", arts: ["小工具未顯示行程","顯示錯誤","行事消失","無法查看"]),
         .init(id: "c9", icon: "💬", name: "其他話題", arts: ["關於聯絡客服的方法","關於支援版本（OS/應用程式）"]),
         .init(id: "c10", icon: "🌍", name: "關於公開行事曆［管理員］", arts: ["［管理者］取得公開行事曆中活動的二維碼並刊載於印刷品"]),

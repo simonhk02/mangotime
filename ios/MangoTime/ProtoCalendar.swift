@@ -51,7 +51,7 @@ struct ProtoMonthScreen: View {
             })
             Button { s.screen = .premiumDetail } label: {
                 HStack {
-                    Text("⭐ TimeTree Premium").font(.caption).bold()
+                    Text("⭐ MangoTime Premium").font(.caption).bold()
                     Spacer()
                     Text("無廣告・上傳檔案 ›").font(.caption).foregroundStyle(PT.soft)
                 }
