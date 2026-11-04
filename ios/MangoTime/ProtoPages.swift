@@ -321,6 +321,10 @@ struct ProtoExtSubscribe: View {
                 ForEach(externals) { e in
                     PRow(icon: "link", label: e.name, value: "已訂閱") { }
                 }
+                // 5.5 iCal 備份/搬屋
+                Divider().padding(.vertical, 10)
+                IcsExportRow()
+                IcsImportRow()
             }
         } bottom: {
             if s.api != nil {
@@ -349,6 +353,74 @@ struct ProtoExtSubscribe: View {
             }
         }
     }
+}
+
+/// 5.5 匯出 .ics（share sheet 分享個檔）
+struct IcsExportRow: View {
+    @EnvironmentObject var s: ProtoState
+    @State private var shareData: Data?
+    var body: some View {
+        Button {
+            Task {
+                guard let calId = s.activeCalendarId else { return }
+                if let data = try? await s.api?.exportIcs(calendarId: calId) { shareData = data }
+            }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "square.and.arrow.up").foregroundStyle(PT.soft).frame(width: 20)
+                Text("匯出行事曆（.ics）").foregroundStyle(.primary)
+                Spacer()
+            }
+            .padding(.vertical, 12)
+        }
+        .buttonStyle(.plain)
+        .overlay(Divider().opacity(0.6), alignment: .bottom)
+        .sheet(isPresented: Binding(get: { shareData != nil }, set: { if !$0 { shareData = nil } })) {
+            if let shareData {
+                ShareSheet(items: [shareData])
+            }
+        }
+    }
+}
+
+/// 5.5 匯入 .ics
+struct IcsImportRow: View {
+    @EnvironmentObject var s: ProtoState
+    @State private var showPicker = false
+    var body: some View {
+        Button { showPicker = true } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "square.and.arrow.down").foregroundStyle(PT.soft).frame(width: 20)
+                Text("匯入 .ics 檔案").foregroundStyle(.primary)
+                Spacer()
+            }
+            .padding(.vertical, 12)
+        }
+        .buttonStyle(.plain)
+        .overlay(Divider().opacity(0.6), alignment: .bottom)
+        .fileImporter(isPresented: $showPicker, allowedContentTypes: [.init(filenameExtension: "ics")!]) { result in
+            guard case .success(let fileUrl) = result else { return }
+            Task {
+                guard let calId = s.activeCalendarId else { return }
+                let ok = fileUrl.startAccessingSecurityScopedResource()
+                defer { if ok { fileUrl.stopAccessingSecurityScopedResource() } }
+                if let data = try? Data(contentsOf: fileUrl),
+                   let text = String(data: data, encoding: .utf8),
+                   let n = try? await s.api?.importIcs(calendarId: calId, ics: text) {
+                    s.note("已匯入 \(n) 個活動 ✓")
+                    await s.loadLive()
+                } else {
+                    s.note("匯入失敗")
+                }
+            }
+        }
+    }
+}
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+    func makeUIViewController(context: Context) -> UIActivityViewController { UIActivityViewController(activityItems: items, applicationActivities: nil) }
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 struct ProtoProfile: View {

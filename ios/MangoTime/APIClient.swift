@@ -468,6 +468,21 @@ extension APIClient {
         let res: Res = try await request("POST", "/v1/calendars/\(calendarId)/scan", body: Req(data: data.base64EncodedString(), mimeType: mimeType))
         return res.events
     }
+    // 5.5 iCal
+    func exportIcs(calendarId: String) async throws -> Data {
+        guard let token else { throw APIError.http(401, "未登入") }
+        var req = URLRequest(url: URL(string: "\(baseURL)/v1/calendars/\(calendarId)/export.ics")!)
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        let (data, res) = try await URLSession.shared.data(for: req)
+        guard (res as? HTTPURLResponse)?.statusCode == 200 else { throw APIError.http(500, "匯出失敗") }
+        return data
+    }
+    func importIcs(calendarId: String, ics: String) async throws -> Int {
+        struct Req: Encodable { let ics: String }
+        struct Res: Codable { let imported: Int }
+        let res: Res = try await request("POST", "/v1/calendars/\(calendarId)/import", body: Req(ics: ics))
+        return res.imported
+    }
 }
 
 struct MTScannedEvent: Codable, Identifiable, Hashable {
