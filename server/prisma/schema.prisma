@@ -51,6 +51,7 @@ model Calendar {
   todoLists     TodoList[]
   photos        Photo[]
   webhooks      Webhook[]
+  publicSlug  String?  @unique // 5.2 公開唯讀 link（null = 未開）
 }
 
 // Task 1.3 — Invite link（一個行事曆可以有多條，revokedAt 標記失效）

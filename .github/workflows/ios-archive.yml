@@ -21,6 +21,10 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
+      - name: Auto build number（workflow run number，唔使次次改 project.yml）
+        run: |
+          sed -i '' "s/CURRENT_PROJECT_VERSION: \".*\"/CURRENT_PROJECT_VERSION: \"$GITHUB_RUN_NUMBER\"/" ios/project.yml
+
       - name: Generate Xcode project
         run: xcodegen generate
         working-directory: ios

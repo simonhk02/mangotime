@@ -82,8 +82,8 @@ export default function ProtoApp() {
   const [helpCat, setHelpCat] = useState(HELP_CATS[0]);
   const [article, setArticle] = useState("");
   const [upsell, setUpsell] = useState(false); // Premium 上傳檔案彈窗
-  const [photoPerm, setPhotoPerm] = useState(false); // 相片權限彈窗
-  const [calPicker, setCalPicker] = useState<string[]>(["家庭日曆"]);
+  const [photoPerm] = useState(false); // 相片權限彈窗（之後接）
+  const [calPicker] = useState<string[]>(["家庭日曆"]); // eslint-disable-line @typescript-eslint/no-unused-vars
 
   const today = new Date();
   const cells = useMemo(() => {
