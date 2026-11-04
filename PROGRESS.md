@@ -15,7 +15,7 @@
 | 1.3 | Members & invite | 🟨 待驗收 | Invite link API（開/預覽/接受/成員列表/creator移除）8 tests 全過（32/32）；production 實測開碼 OK；iOS live：邀請碼複製、成員列表、用邀請碼加入 | |
 | 1.4 | Event CRUD | 🟨 待驗收 | 全欄位 API（repeat/label/note/url/location/remind）、範圍查詢、權限；24/24 tests；outbox event.* | |
 | 1.5 | Month view＋calendar overlay | 🟨 待驗收 | TimeTree 1:1 版面（頂欄/行事曆清單/右直欄）；**農曆雙行日期**（對到參考圖）；雙擊開活動表；獨睇/toggle overlay | |
-| 2.1 | Event comments（chat＋貼相） | ⬜ | | |
+| 2.1 | Event comments（chat＋貼相） | 🟨 待驗收 | 留言 API（列出/留言/刪除自己，outbox event.comment_created）35/35 tests；production 已部署；iOS 活動詳情真留言。貼相留待 2.4 相簿一齊做 | |
 | 2.2 | Memo | ⬜ | | |
 | 2.3 | To-Do List | ⬜ | | |
 | 2.4 | Album | ⬜ | | |
