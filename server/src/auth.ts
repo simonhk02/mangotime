@@ -21,8 +21,18 @@ export async function userFromRequest(prisma: PrismaClient, req: FastifyRequest)
   const header = req.headers.authorization ?? "";
   const m = header.match(/^Bearer\s+(.+)$/i);
   if (!m) return null;
+  const raw = m[1].trim();
+  // mt_ 開頭 = API key（agent 用）；否則係 session token
+  if (raw.startsWith("mt_")) {
+    const { createHash } = await import("node:crypto");
+    const keyHash = createHash("sha256").update(raw).digest("hex");
+    const key = await prisma.apiKey.findUnique({ where: { keyHash }, include: { user: true } });
+    if (!key || key.revokedAt) return null;
+    await prisma.apiKey.update({ where: { id: key.id }, data: { lastUsedAt: new Date() } }).catch(() => {});
+    return key.user;
+  }
   const session = await prisma.session.findUnique({
-    where: { tokenHash: tokenHash(m[1].trim()) },
+    where: { tokenHash: tokenHash(raw) },
     include: { user: true },
   });
   if (!session) return null;

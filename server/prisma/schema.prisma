@@ -24,6 +24,7 @@ model User {
   memoComments     MemoComment[]
   todoLists        TodoList[]
   photos           Photo[]
+  apiKeys          ApiKey[]
 }
 
 model Session {
@@ -49,6 +50,7 @@ model Calendar {
   memos         Memo[]
   todoLists     TodoList[]
   photos        Photo[]
+  webhooks      Webhook[]
 }
 
 // Task 1.3 — Invite link（一個行事曆可以有多條，revokedAt 標記失效）
@@ -191,4 +193,30 @@ model Photo {
   createdAt  DateTime @default(now())
 
   @@index([calendarId, createdAt])
+}
+
+// Task 4.1 — API key（agent 用長期 key；只存 hash）
+model ApiKey {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  keyHash    String    @unique
+  prefix     String    // 顯示用：mt_xxxx…
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+}
+
+// Task 4.2 — Webhook 訂閱（每個行事曆可有多條；dispatcher 讀 OutboxEvent 派遞）
+model Webhook {
+  id         String    @id @default(cuid())
+  calendarId String
+  calendar   Calendar  @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+  url        String
+  secret     String    // HMAC 簽名用
+  active     Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+
+  @@index([calendarId])
 }

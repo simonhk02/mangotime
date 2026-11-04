@@ -87,6 +87,50 @@ try {
   if (call.result.isError) fail("ping tool returned isError (is the API server up?)");
   if (!/"ok"\s*:\s*true/.test(text)) fail("ping response did not contain ok:true");
 
+  // 有 token 先行 E2E：list → create → list → activity
+  if (process.env.MANGOTIME_TOKEN) {
+    const cals = await request("tools/call", { name: "list_calendars", arguments: {} });
+    const calList = JSON.parse(cals.result.content[0].text).calendars ?? [];
+    if (calList.length === 0) fail("no calendars visible with MANGOTIME_TOKEN");
+    const calId = calList[0].id;
+    console.log(`list_calendars -> ${calList.map((c) => c.name).join(", ")}`);
+
+    const ev = await request("tools/call", {
+      name: "create_event",
+      arguments: {
+        calendarId: calId,
+        title: `MCP smoke ${new Date().toISOString().slice(11, 19)}`,
+        startsAt: new Date(Date.now() + 86400000).toISOString(),
+      },
+    });
+    const created = JSON.parse(ev.result.content[0].text).event;
+    if (!created?.id) fail("create_event returned no id");
+    console.log(`create_event -> ${created.title} (${created.id})`);
+
+    const events = await request("tools/call", {
+      name: "list_events",
+      arguments: {
+        calendarId: calId,
+        from: new Date(Date.now() - 86400000).toISOString(),
+        to: new Date(Date.now() + 3 * 86400000).toISOString(),
+      },
+    });
+    const evList = JSON.parse(events.result.content[0].text).events ?? [];
+    if (!evList.some((e) => e.id === created.id)) fail("created event not in list_events");
+    console.log(`list_events -> ${evList.length} events incl. new one`);
+
+    const act = await request("tools/call", { name: "list_activity", arguments: { calendarId: calId } });
+    const items = JSON.parse(act.result.content[0].text).items ?? [];
+    if (items.length === 0) fail("activity feed empty after create_event");
+    console.log(`list_activity -> ${items.length} items, latest: ${items[0].actorName} ${items[0].text}`);
+
+    // 清場：刪返個 smoke event
+    await request("tools/call", { name: "delete_event", arguments: { eventId: created.id } });
+    console.log("delete_event -> cleaned up");
+  } else {
+    console.log("(no MANGOTIME_TOKEN — skip E2E, handshake only)");
+  }
+
   console.log("SMOKE TEST PASS");
   child.kill();
   process.exit(0);

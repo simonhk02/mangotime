@@ -25,9 +25,9 @@
 | 3.2 | Search | ⬜ | | |
 | 3.3 | Dark mode | ⬜ | | |
 | 3.4 | 農曆顯示 | ⬜ | | |
-| 4.1 | Public REST API | ⬜ | | |
-| 4.2 | Webhook | ⬜ | | |
-| 4.3 | MCP server | ⬜ | | |
+| 4.1 | Public REST API | 🟨 待驗收 | `/v1/*` 全部公開 HTTPS；API key（`mt_` 開頭，只存 hash，lastUsedAt）開/列/廢除；auth 同時接 session token + API key；production 實測 key 打 API OK | |
+| 4.2 | Webhook | 🟨 待驗收 | 訂閱 API（https 強制，localhost 例外）+ dispatcher 每 10s 掃 outbox 派遞，HMAC-SHA256 簽名（x-mangotime-signature），51/51 tests 包真 receiver 收料+驗簽 | |
+| 4.3 | MCP server | 🟨 待驗收 | 21 個 tools（events/memos/todos/comments/invites/activity/notices/webhooks 全套）；stdio smoke E2E 打 production 全過（list→create→activity→delete） | |
 | 5.1 | External calendar sync | ⬜ | | |
 | 5.2 | Public Calendar＋embed widget | ⬜ | | |
 | 5.3 | Event Scan（AI 抽日期） | ⬜ | | |
