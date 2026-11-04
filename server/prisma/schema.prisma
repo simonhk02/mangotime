@@ -13,7 +13,7 @@ model User {
   email        String    @unique
   displayName  String
   avatarUrl    String?
-  passwordHash String
+  passwordHash String? // social-only 帳可以冇密碼
   createdAt    DateTime  @default(now())
   sessions     Session[]
   memberships  CalendarMember[] @relation("Memberships")
@@ -26,6 +26,21 @@ model User {
   photos           Photo[]
   apiKeys          ApiKey[]
   attachments      Attachment[]
+  socialAccounts   SocialAccount[]
+}
+
+// Social auth（Apple / Google）：一個 user 可以 link 多個 provider
+model SocialAccount {
+  id          String   @id @default(cuid())
+  provider    String   // "apple" | "google"
+  providerSub String   // provider 嘅穩定 user id（JWT sub）
+  email       String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([provider, providerSub])
+  @@index([userId])
 }
 
 model Session {

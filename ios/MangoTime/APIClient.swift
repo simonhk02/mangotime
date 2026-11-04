@@ -72,6 +72,20 @@ final class APIClient: ObservableObject {
         currentUser = res.user
     }
 
+    // Social 登入（Apple / Google）：成功就 set token + user，同 email 登入一樣
+    func loginApple(idToken: String, displayName: String?) async throws {
+        struct Payload: Encodable { let idToken: String; let displayName: String? }
+        let res: AuthResponse = try await request("POST", "/v1/auth/apple", body: Payload(idToken: idToken, displayName: displayName))
+        token = res.token
+        currentUser = res.user
+    }
+    func loginGoogle(idToken: String) async throws {
+        struct Payload: Encodable { let idToken: String }
+        let res: AuthResponse = try await request("POST", "/v1/auth/google", body: Payload(idToken: idToken))
+        token = res.token
+        currentUser = res.user
+    }
+
     func fetchMe() async throws {
         let res: MeResponse = try await request("GET", "/v1/me")
         currentUser = res.user

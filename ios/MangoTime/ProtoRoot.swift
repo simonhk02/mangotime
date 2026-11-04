@@ -1,4 +1,5 @@
 import SwiftUI
+import AuthenticationServices
 
 /// 收鍵盤（submit 之後叫——唔係鍵盤會遮住底部 tab bar）
 func hideKeyboard() {
@@ -342,6 +343,41 @@ struct ProtoLoginView: View {
                     registerMode.toggle(); s.loginError = nil
                 }
                 .foregroundStyle(PT.orange)
+                Text("或").font(.caption).foregroundStyle(PT.soft)
+                // Apple 登入（真）：Sign in with Apple → identityToken → server 驗簽
+                SignInWithAppleButton(.signIn) { request in
+                    request.requestedScopes = [.fullName, .email]
+                } onCompletion: { result in
+                    switch result {
+                    case .success(let auth):
+                        guard let cred = auth.credential as? ASAuthorizationAppleIDCredential,
+                              let tokenData = cred.identityToken,
+                              let idToken = String(data: tokenData, encoding: .utf8) else {
+                            s.loginError = "攞唔到 Apple 登入憑證"; return
+                        }
+                        // Apple 淨係第一次俾名/email，組埋送去 server 記住
+                        let full = [cred.fullName?.givenName, cred.fullName?.familyName].compactMap { $0 }.joined(separator: " ")
+                        busy = true
+                        Task {
+                            defer { busy = false }
+                            do {
+                                try await s.api?.loginApple(idToken: idToken, displayName: full.isEmpty ? nil : full)
+                                s.screen = .month
+                                await s.loadLive()
+                            } catch {
+                                s.loginError = error.localizedDescription
+                            }
+                        }
+                    case .failure(let err):
+                        if (err as NSError).code != ASAuthorizationError.canceled.rawValue {
+                            s.loginError = err.localizedDescription
+                        }
+                    }
+                }
+                .signInWithAppleButtonStyle(.black)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                // Google 登入：要 Google Cloud OAuth client（整緊），整好先放掣
             }
             Spacer()
         }

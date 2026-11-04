@@ -43,7 +43,7 @@ export async function userFromRequest(prisma: PrismaClient, req: FastifyRequest)
   return session.user;
 }
 
-async function issueSession(prisma: PrismaClient, userId: string): Promise<string> {
+export async function issueSession(prisma: PrismaClient, userId: string): Promise<string> {
   const token = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 3600 * 1000);
   await prisma.session.create({ data: { tokenHash: tokenHash(token), userId, expiresAt } });
@@ -72,7 +72,7 @@ export function registerAuthRoutes(app: FastifyInstance, prisma: PrismaClient) {
     const email = body.email?.trim().toLowerCase();
     if (!email || !body.password) return reply.code(400).send({ error: "email and password required" });
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || !(await verifyPassword(body.password, user.passwordHash))) {
+    if (!user || !user.passwordHash || !(await verifyPassword(body.password, user.passwordHash))) {
       return reply.code(401).send({ error: "invalid email or password" });
     }
     const token = await issueSession(prisma, user.id);
