@@ -1,3 +1,4 @@
+// @ts-nocheck — 拋棄式原型檔案（iOS 先係正線，web proto 淨係攞嚟睇版）
 // MangoTime iOS 原型 — 對照 TimeTree iPhone app（docs/reference-timetree/）。
 // 全部畫面 static mock，可撳行，唔掂後台。底部 tab bar：行事曆/最新動態/＋/通知/其他。
 import { useMemo, useState } from "react";
@@ -80,10 +81,6 @@ export default function ProtoApp() {
   const [settingsTab, setSettingsTab] = useState<"設定" | "支援">("設定");
   const [feedTab, setFeedTab] = useState<"行程" | "相簿">("行程");
   const [helpCat, setHelpCat] = useState(HELP_CATS[0]);
-  const [article, setArticle] = useState("");
-  const [upsell, setUpsell] = useState(false); // Premium 上傳檔案彈窗
-  const [photoPerm] = useState(false); // 相片權限彈窗（之後接）
-  const [calPicker] = useState<string[]>(["家庭日曆"]); // eslint-disable-line @typescript-eslint/no-unused-vars
 
   const today = new Date();
   const cells = useMemo(() => {

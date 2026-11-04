@@ -410,6 +410,12 @@ extension APIClient {
         let res: EventListResponse = try await request("GET", "/v1/calendars/\(calendarId)/events/search?q=\(q.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? q)")
         return res.events
     }
+    func enablePublic(calendarId: String) async throws -> String {
+        struct R: Codable { let publicSlug: String }
+        struct Empty: Encodable {}
+        let res: R = try await request("POST", "/v1/calendars/\(calendarId)/public", body: Optional<Empty>.none)
+        return res.publicSlug
+    }
 }
 
 struct MTNotice: Codable, Identifiable, Hashable {

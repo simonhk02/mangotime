@@ -819,6 +819,22 @@ struct ProtoInvite: View {
                 .font(.caption).foregroundStyle(PT.soft)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, 12)
+            Divider().padding(.vertical, 10)
+            Text("🌐 公開唯讀連結（唔使 app 都睇到月曆）").font(.caption).foregroundStyle(PT.soft)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Button {
+                Task {
+                    guard let calId = s.activeCalendarId else { return }
+                    if let slug = try? await s.api?.enablePublic(calendarId: calId) {
+                        UIPasteboard.general.string = "https://mangotime.149-28-154-219.sslip.io/public/\(slug)"
+                        s.note("公開連結已複製 ✓")
+                    }
+                }
+            } label: {
+                Text("開＋複製公開連結").bold().foregroundStyle(PT.orange)
+                    .frame(maxWidth: .infinity).padding(.vertical, 11)
+                    .background(PT.orange.opacity(0.12)).clipShape(RoundedRectangle(cornerRadius: 10))
+            }
         }
         .onAppear { Task { await s.loadInvite() } }
     }
