@@ -28,7 +28,7 @@
 | 4.1 | Public REST API | 🟨 待驗收 | `/v1/*` 全部公開 HTTPS；API key（`mt_` 開頭，只存 hash，lastUsedAt）開/列/廢除；auth 同時接 session token + API key；production 實測 key 打 API OK | |
 | 4.2 | Webhook | 🟨 待驗收 | 訂閱 API（https 強制，localhost 例外）+ dispatcher 每 10s 掃 outbox 派遞，HMAC-SHA256 簽名（x-mangotime-signature），51/51 tests 包真 receiver 收料+驗簽 | |
 | 4.3 | MCP server | 🟨 待驗收 | 21 個 tools（events/memos/todos/comments/invites/activity/notices/webhooks 全套）；stdio smoke E2E 打 production 全過（list→create→activity→delete） | |
-| 5.1 | External calendar sync | ⬜ | | |
+| 5.1 | External calendar sync | 🟨 待驗收 | .ics 訂閱 API（cache 15min，全日/定時/RRULE 重複 parse，64/64 tests）；iOS「其他→訂閱外部日曆」貼 link 即成，月曆灰色唯讀顯示外部活動 | |
 | 5.2 | Public Calendar＋embed widget | 🟨 待驗收 | publicSlug 開/關 API + /v1/public/:slug（sanitize 唔洩 creatorId，55/55 tests）；web 唯讀月曆頁上咗 https://mangotime.149-28-154-219.sslip.io/public/<slug>（Chrome headless 實測渲染 OK）；iOS 邀請頁一撳開＋複製；embed widget 留返下一步 | |
 | 5.3 | Event Scan（AI 抽日期） | ⬜ | | |
 | 5.4 | 檔案附件 | 🟨 待驗收 | Attachment model + base64 上傳/攞檔/刪除（57/57 tests，VPS live）；iOS 詳情頁 📎 附件區：PhotosPicker 加相 + 縮圖橫列；PDF 都收 | |
