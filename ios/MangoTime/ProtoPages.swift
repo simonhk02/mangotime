@@ -181,7 +181,45 @@ struct ProtoFeed: View {
 }
 
 struct ProtoNotices: View {
+    @EnvironmentObject var s: ProtoState
+    @State private var liveNotices: [MTNotice] = []
     var body: some View {
+        if s.api != nil { liveNoticesView } else { mockNotices }
+    }
+
+    private var liveNoticesView: some View {
+        VStack(spacing: 0) {
+            PNavBar("通知")
+            ScrollView {
+                if liveNotices.isEmpty {
+                    EmptyState(icon: "🔔", title: "冇通知", sub: "其他成員郁手就會喺度見到。")
+                }
+                ForEach(liveNotices) { n in
+                    HStack(spacing: 10) {
+                        Image(systemName: "bell.fill").foregroundStyle(PT.orange)
+                            .frame(width: 28, height: 28)
+                            .background(PT.orange.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(n.actorName) \(n.text)").font(.subheadline)
+                            Text(n.createdAt.prefix(10)).font(.caption).foregroundStyle(PT.soft)
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, 14).padding(.vertical, 12)
+                    .overlay(Divider().opacity(0.5), alignment: .bottom)
+                }
+            }
+            .refreshable { await reload() }
+        }
+        .onAppear { Task { await reload() } }
+    }
+
+    private func reload() async {
+        liveNotices = (try? await s.api?.listNotices()) ?? []
+    }
+
+    private var mockNotices: some View {
         VStack(spacing: 0) {
             PNavBar("通知")
             ScrollView {

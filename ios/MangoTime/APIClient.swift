@@ -385,7 +385,20 @@ extension APIClient {
         let res: MTActivityWrap = try await request("GET", "/v1/calendars/\(calendarId)/activity")
         return res.items
     }
+    func listNotices() async throws -> [MTNotice] {
+        let res: MTNoticeWrap = try await request("GET", "/v1/notices")
+        return res.notices
+    }
 }
+
+struct MTNotice: Codable, Identifiable, Hashable {
+    let id: String
+    let calendarId: String
+    let actorName: String
+    let text: String
+    let createdAt: String
+}
+struct MTNoticeWrap: Codable { let notices: [MTNotice] }
 
 func parseISODate(_ s: String) -> Date? {
     let f = ISO8601DateFormatter()
