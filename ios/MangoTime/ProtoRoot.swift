@@ -1,6 +1,17 @@
 import SwiftUI
 import AuthenticationServices
 
+/// ASWebAuthenticationSession 要個 presentation anchor
+final class GoogleAuthContext: NSObject, ASWebAuthenticationPresentationContextProviding {
+    static let shared = GoogleAuthContext()
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .first { $0.isKeyWindow } ?? ASPresentationAnchor()
+    }
+}
+
 /// 收鍵盤（submit 之後叫——唔係鍵盤會遮住底部 tab bar）
 func hideKeyboard() {
     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
@@ -271,6 +282,42 @@ struct ProtoLoginView: View {
     @State private var registerMode = false
     @State private var busy = false
 
+    /// Google 登入：ASWebAuthenticationSession 開 Google OAuth（response_type=id_token）
+    /// redirect 用 reversed client id scheme（Info.plist 已註冊）
+    private func startGoogleLogin() {
+        let clientId = "289476107711-c10sn778dm17eg68aghaoae9j9i0d3e0.apps.googleusercontent.com"
+        let scheme = "com.googleusercontent.apps.289476107711-c10sn778dm17eg68aghaoae9j9i0d3e0"
+        let nonce = UUID().uuidString
+        var comps = URLComponents(string: "https://accounts.google.com/o/oauth2/v2/auth")!
+        comps.queryItems = [
+            .init(name: "client_id", value: clientId),
+            .init(name: "redirect_uri", value: "\(scheme):/oauth2redirect"),
+            .init(name: "response_type", value: "id_token"),
+            .init(name: "scope", value: "openid email profile"),
+            .init(name: "nonce", value: nonce),
+        ]
+        guard let url = comps.url else { return }
+        let session = ASWebAuthenticationSession(url: url, callbackURLScheme: scheme) { callbackURL, error in
+            guard error == nil, let callbackURL else { return }
+            // callback fragment: #id_token=...&...
+            guard let fragment = callbackURL.fragment,
+                  let pair = fragment.split(separator: "&").first(where: { $0.hasPrefix("id_token=") }) else { return }
+            let idToken = String(pair.dropFirst("id_token=".count))
+            Task { @MainActor in
+                do {
+                    try await s.api?.loginGoogle(idToken: idToken)
+                    s.screen = .month
+                    await s.loadLive()
+                } catch {
+                    s.loginError = error.localizedDescription
+                }
+            }
+        }
+        session.presentationContextProvider = GoogleAuthContext.shared
+        session.prefersEphemeralWebBrowserSession = false
+        session.start()
+    }
+
     var body: some View {
         VStack(spacing: 14) {
             Spacer()
@@ -377,7 +424,18 @@ struct ProtoLoginView: View {
                 .signInWithAppleButtonStyle(.black)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
-                // Google 登入：要 Google Cloud OAuth client（整緊），整好先放掣
+                // Google 登入（真）：ASWebAuthenticationSession 開 Google OAuth → idToken → server
+                Button {
+                    startGoogleLogin()
+                } label: {
+                    HStack(spacing: 8) {
+                        Text("G").font(.headline).bold()
+                            .foregroundStyle(Color(red: 0.26, green: 0.52, blue: 0.96))
+                        Text("使用 Google 登入").foregroundStyle(.primary)
+                    }
+                    .frame(maxWidth: .infinity).padding(.vertical, 12)
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(.separator)))
+                }
             }
             Spacer()
         }

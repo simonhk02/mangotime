@@ -44,13 +44,14 @@ async function appleToken(sub: string, email?: string) {
   return jwt.sign(privateKey);
 }
 
-async function googleToken(sub: string, email: string, name?: string) {
+async function googleToken(sub: string, email: string, name?: string, aud?: string) {
   let jwt = new SignJWT({ email, ...(name ? { name } : {}) })
     .setProtectedHeader({ alg: "RS256", kid: "testkey" })
     .setIssuer("https://accounts.google.com")
     .setSubject(sub)
     .setIssuedAt()
     .setExpirationTime("5m");
+  if (aud) jwt = jwt.setAudience(aud);
   return jwt.sign(privateKey);
 }
 
@@ -88,4 +89,16 @@ test("假 token 401", async () => {
   assert.equal(bad.statusCode, 401);
   const bad2 = await app.inject({ method: "POST", url: "/v1/auth/google", payload: { idToken: "not.a.jwt" } });
   assert.equal(bad2.statusCode, 401);
+});
+
+test("Google audience 檢查：aud 啱先過", async () => {
+  process.env.GOOGLE_CLIENT_ID = "id-a,id-b";
+  const good = await googleToken("gsub-aud", "aud@a.hk", undefined, "id-b");
+  const r1 = await app.inject({ method: "POST", url: "/v1/auth/google", payload: { idToken: good } });
+  assert.equal(r1.statusCode, 200);
+
+  const wrongAud = await googleToken("gsub-aud2", "aud2@a.hk", undefined, "id-other");
+  const r2 = await app.inject({ method: "POST", url: "/v1/auth/google", payload: { idToken: wrongAud } });
+  assert.equal(r2.statusCode, 401);
+  process.env.GOOGLE_CLIENT_ID = "";
 });

@@ -12,7 +12,10 @@ import { issueSession } from "./auth.js";
 function appleJwks() { return process.env.APPLE_JWKS_URL ?? "https://appleid.apple.com/auth/keys"; }
 function googleJwks() { return process.env.GOOGLE_JWKS_URL ?? "https://www.googleapis.com/oauth2/v3/certs"; }
 function appleAud() { return process.env.APPLE_CLIENT_ID ?? "com.mangotime.app"; }
-function googleAud() { return process.env.GOOGLE_CLIENT_ID ?? ""; }
+// GOOGLE_CLIENT_ID 支援 comma-separated（iOS client + web client 都接）
+function googleAuds() {
+  return (process.env.GOOGLE_CLIENT_ID ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+}
 
 function jwksFor(urlFn: () => string) {
   const override = process.env.JWKS_JSON_OVERRIDE;
@@ -33,10 +36,10 @@ async function verifyApple(idToken: string): Promise<{ sub: string; email?: stri
 async function verifyGoogle(idToken: string): Promise<{ sub: string; email?: string; name?: string } | null> {
   try {
     const jwks = jwksFor(googleJwks);
-    const aud = googleAud();
+    const auds = googleAuds();
     const { payload } = await jwtVerify(idToken, jwks, {
       issuer: ["https://accounts.google.com", "accounts.google.com"],
-      ...(aud ? { audience: aud } : {}),
+      ...(auds.length ? { audience: auds } : {}),
     });
     return { sub: payload.sub as string, email: payload.email as string | undefined, name: payload.name as string | undefined };
   } catch {
