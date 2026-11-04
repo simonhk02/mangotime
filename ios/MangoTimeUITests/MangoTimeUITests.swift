@@ -12,6 +12,16 @@ final class MangoTimeUITests: XCTestCase {
         app.launch()
     }
 
+    /// tap 完等鍵盤出先打字；第一次 tap 唔中 focus 就再 tap
+    func typeInto(_ field: XCUIElement, _ text: String) {
+        field.tap()
+        if !app.keyboards.element.waitForExistence(timeout: 3) {
+            field.tap()
+            _ = app.keyboards.element.waitForExistence(timeout: 3)
+        }
+        field.typeText(text)
+    }
+
     /// 完整 flow：註冊 → 開行事曆 → 開活動 → 月曆見到活動 → 留言
     func testFullUserJourney() throws {
         // 1) 註冊
@@ -19,12 +29,9 @@ final class MangoTimeUITests: XCTestCase {
         XCTAssertTrue(toggle.waitForExistence(timeout: 10), "應見到登入頁")
         toggle.tap()
 
-        app.textFields["reg_name"].tap()
-        app.textFields["reg_name"].typeText("UAT 測試員")
-        app.textFields["login_email"].tap()
-        app.textFields["login_email"].typeText(email)
-        app.secureTextFields["login_password"].tap()
-        app.secureTextFields["login_password"].typeText("password123")
+        typeInto(app.textFields["reg_name"], "UAT 測試員")
+        typeInto(app.textFields["login_email"], email)
+        typeInto(app.secureTextFields["login_password"], "password123")
         app.buttons["註冊"].tap()
 
         // 2) 入到月曆（冇行事曆都入到，撳左上開清單）
@@ -35,8 +42,7 @@ final class MangoTimeUITests: XCTestCase {
         // 3) 開行事曆
         let nameField = app.textFields["cal_new_name"]
         XCTAssertTrue(nameField.waitForExistence(timeout: 5), "應見到行事曆清單")
-        nameField.tap()
-        nameField.typeText("UAT 日曆")
+        typeInto(nameField, "UAT 日曆")
         app.buttons["cal_create_btn"].tap()
         sleep(2)
 
@@ -46,20 +52,15 @@ final class MangoTimeUITests: XCTestCase {
         newCal.tap()
         sleep(2)
 
-        // 4) 撳今日格開活動（搵今日日期數字掣）
-        let day = Calendar.current.component(.day, from: Date())
-        let todayCell = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", argumentArray: ["\(day)"])).firstMatch
-        if todayCell.waitForExistence(timeout: 5) { todayCell.tap() }
-        else {
-            // fallback：底部 ＋
-            app.buttons["＋"].firstMatch.tap()
-        }
+        // 4) 底部 ＋ 開活動表
+        let plus = app.buttons["tab_plus"]
+        XCTAssertTrue(plus.waitForExistence(timeout: 5), "應見到 ＋ 掣")
+        plus.tap()
 
         // 5) 填標題保存
         let titleField = app.textFields["event_title"]
         XCTAssertTrue(titleField.waitForExistence(timeout: 5), "應見到新增活動表")
-        titleField.tap()
-        titleField.typeText("UAT 打邊爐")
+        typeInto(titleField, "UAT 打邊爐")
         app.buttons["保存"].tap()
         sleep(3)
 
@@ -71,8 +72,7 @@ final class MangoTimeUITests: XCTestCase {
         sleep(2)
         let chatField = app.textFields["留言…"]
         if chatField.waitForExistence(timeout: 5) {
-            chatField.tap()
-            chatField.typeText("UAT 留言測試")
+            typeInto(chatField, "UAT 留言測試")
             app.buttons["送出"].tap()
             sleep(2)
             XCTAssertTrue(app.staticTexts["UAT 留言測試"].waitForExistence(timeout: 5), "應見到自己嘅留言")
@@ -84,7 +84,7 @@ final class MangoTimeUITests: XCTestCase {
     func testLogoutLogin() throws {
         // 如果已登入（上個 test 留底），先登出
         if !app.buttons["未有帳號？註冊"].waitForExistence(timeout: 6) {
-            app.buttons["☰"].firstMatch.tap()
+            app.buttons["tab_other"].tap()
             sleep(1)
             app.staticTexts.matching(NSPredicate(format: "label CONTAINS '@'")).firstMatch.tap()
             sleep(1)
@@ -95,14 +95,14 @@ final class MangoTimeUITests: XCTestCase {
         let toggle = app.buttons["未有帳號？註冊"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 10), "應見到登入頁")
         toggle.tap()
-        app.textFields["reg_name"].tap(); app.textFields["reg_name"].typeText("Logout Test")
-        app.textFields["login_email"].tap(); app.textFields["login_email"].typeText("lo\(uniq)@test.hk")
-        app.secureTextFields["login_password"].tap(); app.secureTextFields["login_password"].typeText("password123")
+        typeInto(app.textFields["reg_name"], "Logout Test")
+        typeInto(app.textFields["login_email"], "lo\(uniq)@test.hk")
+        typeInto(app.secureTextFields["login_password"], "password123")
         app.buttons["註冊"].tap()
         sleep(4)
 
         // 其他 → 個人檔案 → 登出
-        app.buttons["☰"].firstMatch.tap()
+        app.buttons["tab_other"].tap()
         sleep(1)
         app.staticTexts["lo\(uniq)@test.hk"].firstMatch.tap()
         sleep(1)
@@ -111,8 +111,8 @@ final class MangoTimeUITests: XCTestCase {
 
         // 登入返
         XCTAssertTrue(app.buttons["登入"].waitForExistence(timeout: 5), "登出後應返登入頁")
-        app.textFields["login_email"].tap(); app.textFields["login_email"].typeText("lo\(uniq)@test.hk")
-        app.secureTextFields["login_password"].tap(); app.secureTextFields["login_password"].typeText("password123")
+        typeInto(app.textFields["login_email"], "lo\(uniq)@test.hk")
+        typeInto(app.secureTextFields["login_password"], "password123")
         app.buttons["登入"].tap()
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS '▾'")).firstMatch.waitForExistence(timeout: 10), "登入後應見到月曆")
     }
