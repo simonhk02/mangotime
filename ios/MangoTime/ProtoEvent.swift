@@ -2,22 +2,34 @@ import SwiftUI
 
 struct ProtoEventForm: View {
     @EnvironmentObject var s: ProtoState
+    var editing: MTEvent? = nil
     @State private var title = ""
     @State private var saveAsMemo = false
     @State private var allDay = false
     @State private var showLabels = false
     @State private var labelIdx = 0
     @State private var date = Date()
+    @State private var loc = ""
+    @State private var noteText = ""
     private var labelKeys = ["bright-orange", "emerald", "blue", "red", "purple"]
 
     var body: some View {
-        PSheet(title: "新增活動", onBack: { s.screen = .month }, backText: "×", right: AnyView(
+        PSheet(title: editing == nil ? "新增活動" : "編輯活動", onBack: { s.screen = .month }, backText: "×", right: AnyView(
             Button {
                 hideKeyboard()
                 if s.api != nil {
                     let t = title.trimmingCharacters(in: .whitespaces)
                     guard !t.isEmpty else { return }
-                    Task { await s.createLiveEvent(title: t, date: date, allDay: allDay, labelColor: labelKeys[labelIdx]) }
+                    if let ev = editing {
+                        Task {
+                            _ = try? await s.api?.updateEvent(eventId: ev.id, title: t, startsAt: date, allDay: allDay, labelColor: labelKeys[labelIdx], location: loc.isEmpty ? nil : loc, note: noteText.isEmpty ? nil : noteText)
+                            s.note("已更新 ✓")
+                            await s.loadLive()
+                            s.screen = .month
+                        }
+                    } else {
+                        Task { await s.createLiveEvent(title: t, date: date, allDay: allDay, labelColor: labelKeys[labelIdx]) }
+                    }
                 } else {
                     s.note("已保存（mock）"); s.screen = .month
                 }
@@ -75,11 +87,35 @@ struct ProtoEventForm: View {
             }
             PRow(label: "🔁 重複", value: "唔重複") { s.note("重複選項（mock）") }
             PRow(label: "👥 成員", value: "全部成員") { s.note("揀成員（mock）") }
-            PRow(label: "📍 地點", value: "未填") { s.note("地點輸入（mock）") }
-            PRow(label: "🔗 網址", value: "未填") { s.note("網址輸入（mock）") }
-            PRow(label: "🗒 備註", value: "未填") { s.screen = .noteEdit }
+            if s.api != nil {
+                HStack {
+                    Text("📍 地點")
+                    Spacer()
+                    TextField("未填", text: $loc).multilineTextAlignment(.trailing).foregroundStyle(PT.soft)
+                }
+                .padding(.vertical, 12).overlay(Divider().opacity(0.6), alignment: .bottom)
+                HStack {
+                    Text("🗒 備註")
+                    Spacer()
+                    TextField("未填", text: $noteText).multilineTextAlignment(.trailing).foregroundStyle(PT.soft)
+                }
+                .padding(.vertical, 12).overlay(Divider().opacity(0.6), alignment: .bottom)
+            } else {
+                PRow(label: "📍 地點", value: "未填") { s.note("地點輸入（mock）") }
+                PRow(label: "🔗 網址", value: "未填") { s.note("網址輸入（mock）") }
+                PRow(label: "🗒 備註", value: "未填") { s.screen = .noteEdit }
+            }
             PRow(label: "📎 上傳檔案", value: "＋") { s.upsell = true }
             PRow(label: "☑ 待辦清單", value: "＋ 新增清單") { s.screen = .todos }
+        }
+        .onAppear {
+            guard let ev = editing else { return }
+            title = ev.title
+            allDay = ev.allDay
+            if let d = parseISODate(ev.startsAt) { date = d }
+            if let i = labelKeys.firstIndex(of: ev.labelColor ?? "bright-orange") { labelIdx = i }
+            loc = ev.location ?? ""
+            noteText = ev.note ?? ""
         }
     }
 }
@@ -150,7 +186,9 @@ struct ProtoLiveEventDetail: View {
     }
 
     var body: some View {
-        PSheet(title: ev.title, onBack: { s.screen = .month }) {
+        PSheet(title: ev.title, onBack: { s.screen = .month }, right: AnyView(
+            Button { s.screen = .editEvent(ev) } label: { Text("編輯").foregroundStyle(PT.orange) }
+        )) {
             PRow(label: "🕐", value: startText)
             HStack {
                 Text("🏷 標籤")

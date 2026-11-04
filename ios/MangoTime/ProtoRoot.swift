@@ -11,6 +11,7 @@ enum ProtoScreen: Hashable {
     case month, weekly
     case calendarList, monthPicker
     case create, noteEdit
+    case editEvent(MTEvent)
     case eventDetail(MockEvent)
     case liveEventDetail(MTEvent)
     case search
@@ -391,6 +392,7 @@ struct ProtoContent: View {
             case .calendarList: ProtoCalendarList()
             case .monthPicker: ProtoMonthPicker()
             case .create: ProtoEventForm()
+            case .editEvent(let ev): ProtoEventForm(editing: ev)
             case .noteEdit: ProtoNoteEdit()
             case .eventDetail(let ev): ProtoEventDetail(ev: ev)
             case .liveEventDetail(let ev): ProtoLiveEventDetail(ev: ev)

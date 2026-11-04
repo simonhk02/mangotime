@@ -186,6 +186,23 @@ extension APIClient {
         struct Empty: Encodable {}
         let _: EmptyResponse = try await request("DELETE", "/v1/calendars/\(calendarId)/events/\(eventId)", body: Optional<Empty>.none)
     }
+
+    func updateEvent(eventId: String, title: String?, startsAt: Date?, allDay: Bool?, labelColor: String?, location: String?, note: String?) async throws -> MTEvent {
+        struct Payload: Encodable {
+            let title: String?
+            let startsAt: String?
+            let allDay: Bool?
+            let labelColor: String?
+            let location: String?
+            let note: String?
+        }
+        let iso = ISO8601DateFormatter()
+        let res: EventResponse = try await request(
+            "PATCH", "/v1/events/\(eventId)",
+            body: Payload(title: title, startsAt: startsAt.map { iso.string(from: $0) }, allDay: allDay, labelColor: labelColor, location: location, note: note)
+        )
+        return res.event
+    }
 }
 
 // MARK: - Invites & members (task 1.3)
