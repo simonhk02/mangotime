@@ -18,7 +18,7 @@
 | 2.1 | Event comments（chat＋貼相） | 🟨 待驗收 | 留言 API（列出/留言/刪除自己，outbox event.comment_created）35/35 tests；production 已部署；iOS 活動詳情真留言。貼相留待 2.4 相簿一齊做 | |
 | 2.2 | Memo | 🟨 待驗收 | CRUD+留言 API（38/38 tests，commentCount，outbox memo.*）；production 已部署；iOS 備忘錄列表/開新/詳情/留言/刪除全變真 | |
 | 2.3 | To-Do List | 🟨 待驗收 | List CRUD + item 加/toggle(doneBy)/刪，done/total 計數，outbox todo.*；42/42 tests；production 已部署；iOS 全變真（開清單/加項/tick/刪） | |
-| 2.4 | Album | ⬜ | | |
+| 2.4 | Album | 🟨 待驗收 | base64 上傳（8MB 上限、jpg/png/webp/heic）→ VPS /data/uploads → cuid 公開 URL（cache 1 年）；44/44 tests；production 實測上傳+攞相 OK；nginx body 20m；iOS PhotosUI 揀相壓縮上傳、AsyncImage grid、長按刪自己相 | |
 | 2.5 | Activity＋Notices | ⬜ | | |
 | 2.6 | Notifications | ⬜ | | |
 | 3.1 | Weekly／直向 view | ⬜ | | |
