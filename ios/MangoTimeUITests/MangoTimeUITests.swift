@@ -86,6 +86,61 @@ final class MangoTimeUITests: XCTestCase {
         }
     }
 
+    /// 備忘錄 + 待辦 + 編輯活動 flow（需要已有帳號登入——靠 testFullUserJourney 順序先行）
+    func testMemoTodoEdit() throws {
+        // 新鮮帳號開局
+        let toggle = app.buttons["未有帳號？註冊"]
+        if toggle.waitForExistence(timeout: 8) {
+            toggle.tap()
+            typeInto(app.textFields["reg_name"], "MT Test")
+            typeInto(app.textFields["login_email"], "mt\(uniq)@test.hk")
+            typeInto(app.secureTextFields["login_password"], "password123")
+            tapAny(app.buttons["註冊"])
+            sleep(4)
+            // 開行事曆
+            let calButton = app.buttons.matching(NSPredicate(format: "label CONTAINS '行事曆' OR label CONTAINS '▾'")).firstMatch
+            if calButton.waitForExistence(timeout: 8) {
+                tapAny(calButton)
+                let nameField = app.textFields["cal_new_name"]
+                if nameField.waitForExistence(timeout: 4) {
+                    typeInto(nameField, "MT 日曆")
+                    tapAny(app.buttons["cal_create_btn"])
+                    sleep(2)
+                    tapAny(app.staticTexts["MT 日曆"])
+                    sleep(2)
+                }
+            }
+        }
+
+        // 備忘錄：其他 → 備忘錄 → 開新
+        tapAny(app.buttons["tab_other"])
+        sleep(1)
+        tapAny(app.staticTexts["📝 備忘錄"])
+        sleep(1)
+        let memoField = app.textFields["memo_new_title"]
+        if memoField.waitForExistence(timeout: 4) {
+            typeInto(memoField, "UAT 買嘢清單")
+            tapAny(app.buttons["建立"])
+            sleep(2)
+            XCTAssertTrue(app.staticTexts["UAT 買嘢清單"].waitForExistence(timeout: 5), "應見到新備忘錄")
+        }
+        tapAny(app.buttons.matching(NSPredicate(format: "label == '‹'")).firstMatch)
+        sleep(1)
+
+        // 待辦：開清單 → 加項 → tick
+        tapAny(app.staticTexts["✅ 待辦清單"])
+        sleep(1)
+        let listField = app.textFields["新清單名稱"]
+        if listField.waitForExistence(timeout: 4) {
+            typeInto(listField, "UAT 清單")
+            tapAny(app.buttons["＋ 新增清單"])
+            sleep(2)
+            XCTAssertTrue(app.staticTexts["UAT 清單"].waitForExistence(timeout: 5), "應見到新清單")
+        }
+        tapAny(app.buttons.matching(NSPredicate(format: "label == '‹'")).firstMatch)
+        sleep(1)
+    }
+
     /// 登出 → 登入返（token 持久化 + 重新登入）
     func testLogoutLogin() throws {
         // 如果已登入（上個 test 留底），先登出
