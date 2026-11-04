@@ -66,6 +66,7 @@ model Calendar {
   memos         Memo[]
   todoLists     TodoList[]
   photos        Photo[]
+  externals     ExternalCalendar[]
   webhooks      Webhook[]
   publicSlug  String?  @unique // 5.2 公開唯讀 link（null = 未開）
 }
@@ -224,6 +225,21 @@ model ApiKey {
   createdAt  DateTime  @default(now())
   lastUsedAt DateTime?
   revokedAt  DateTime?
+}
+
+// Task 5.1 — External calendar 訂閱（.ics URL，cache 咗啲活動）
+model ExternalCalendar {
+  id            String    @id @default(cuid())
+  calendarId    String
+  calendar      Calendar  @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+  url           String
+  name          String
+  cachedEvents  String?   // JSON array of IcsEvent
+  lastFetchedAt DateTime?
+  lastError     String?
+  createdAt     DateTime  @default(now())
+
+  @@index([calendarId])
 }
 
 // Task 5.4 — Event attachment（活動附件：相/PDF 釘落活動）
