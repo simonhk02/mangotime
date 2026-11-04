@@ -32,4 +32,4 @@
 | 5.2 | Public Calendar＋embed widget | 🟨 待驗收 | publicSlug 開/關 API + /v1/public/:slug（sanitize 唔洩 creatorId，55/55 tests）；web 唯讀月曆頁上咗 https://mangotime.149-28-154-219.sslip.io/public/<slug>（Chrome headless 實測渲染 OK）；iOS 邀請頁一撳開＋複製；embed widget 留返下一步 | |
 | 5.3 | Event Scan（AI 抽日期） | 🟨 待驗收 | /scan 駁 Kimi vision（api.kimi.com/coding，注意 temperature 唔俾改）；production 實測海報相抽中「週年大笪地 BBQ 2026-11-28 19:00 城門谷」+ 網球班兩個活動；iOS 新增活動頁「掃描圖片建立」→ 建議逐條撳入表單（67/67 tests） | |
 | 5.4 | 檔案附件 | 🟨 待驗收 | Attachment model + base64 上傳/攞檔/刪除（57/57 tests，VPS live）；iOS 詳情頁 📎 附件區：PhotosPicker 加相 + 縮圖橫列；PDF 都收 | |
-| 5.5 | iCal import/export | ⬜ | | |
+| 5.5 | iCal import/export | 🟨 待驗收 | export.ics（RFC escape，round-trip test 過）+ import（上限 500 個）；production 實測 export 出真 ics；iOS 訂閱頁加「匯出（share sheet）/匯入（fileImporter）」（70/70 tests） | |
