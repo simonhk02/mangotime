@@ -21,10 +21,10 @@
 | 2.4 | Album | 🟨 待驗收 | base64 上傳（8MB 上限、jpg/png/webp/heic）→ VPS /data/uploads → cuid 公開 URL（cache 1 年）；44/44 tests；production 實測上傳+攞相 OK；nginx body 20m；iOS PhotosUI 揀相壓縮上傳、AsyncImage grid、長按刪自己相 | |
 | 2.5 | Activity＋Notices | 🟨 待驗收 | /activity 直讀 outbox（全部 18 種動作→廣東話 summary+icon，actor join，46/46 tests）；production 實測 feed OK；iOS 行程 tab 真 feed（相對時間）+ 相簿 tab 真相。Notices（2.6）分開做 | |
 | 2.6 | Notifications | 🟨 待驗收 | /notices：其他成員喺我行事曆嘅動作（自己嘅唔計，48/48 tests）；production 已部署；iOS 通知頁變真+下拉更新。APNs 推送留返上架前 | |
-| 3.1 | Weekly／直向 view | ⬜ | | |
-| 3.2 | Search | ⬜ | | |
-| 3.3 | Dark mode | ⬜ | | |
-| 3.4 | 農曆顯示 | ⬜ | | |
+| 3.1 | Weekly／直向 view | 🟨 待驗收 | 直向時間軸：00–23 鐘格線、定時活動按鐘擺位（高度=時長）、全日分開處理、撳入詳情；mock/live 兩用 | |
+| 3.2 | Search | 🟨 待驗收 | /events/search?q=（title/location/note contains，53/53 tests）；iOS 搜尋頁即打即搜變真 | |
+| 3.3 | Dark mode | ✅ 完成 | 全 app 用 system colors（systemBackground/separator/label），無 hardcoded 白底——iOS dark mode 自動跟 | 2026-11-04 |
+| 3.4 | 農曆顯示 | ✅ 完成 | 月曆格新曆+農曆雙行（查表法 1900–2100，對到參考圖 11/15=十月初七）；顯示設定有開關，Lunar.swift 同 web lunar.ts 對齊 | 2026-11-04 |
 | 4.1 | Public REST API | 🟨 待驗收 | `/v1/*` 全部公開 HTTPS；API key（`mt_` 開頭，只存 hash，lastUsedAt）開/列/廢除；auth 同時接 session token + API key；production 實測 key 打 API OK | |
 | 4.2 | Webhook | 🟨 待驗收 | 訂閱 API（https 強制，localhost 例外）+ dispatcher 每 10s 掃 outbox 派遞，HMAC-SHA256 簽名（x-mangotime-signature），51/51 tests 包真 receiver 收料+驗簽 | |
 | 4.3 | MCP server | 🟨 待驗收 | 21 個 tools（events/memos/todos/comments/invites/activity/notices/webhooks 全套）；stdio smoke E2E 打 production 全過（list→create→activity→delete） | |
