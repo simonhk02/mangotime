@@ -4,10 +4,14 @@ name: iOS Archive & Upload
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: ["uat"]
+    types: [completed]
 
 jobs:
   archive:
     runs-on: macos-15
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v4
 
