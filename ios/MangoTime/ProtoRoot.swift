@@ -200,6 +200,7 @@ struct ProtoRootView: View {
             default:
                 VStack(spacing: 0) {
                     ProtoContent()
+                    Spacer(minLength: 0)
                     if [.month, .weekly, .feed, .notices, .other].contains(s.screen) {
                         ProtoTabBar()
                     }
