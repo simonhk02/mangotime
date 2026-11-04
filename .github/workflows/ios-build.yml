@@ -1,10 +1,7 @@
-# MangoTime iOS CI — compile-only on GitHub macOS runners (no signing).
+# MangoTime iOS CI build check — 而家 UAT 已包 build，呢個改做手動備用（慳 macOS runner 時間）
 name: iOS Build
 
 on:
-  push:
-    branches: [main]
-    paths: ["ios/**", ".github/workflows/ios-build.yml"]
   workflow_dispatch:
 
 jobs:
