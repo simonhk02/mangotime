@@ -17,7 +17,7 @@
 | 1.5 | Month view＋calendar overlay | 🟨 待驗收 | TimeTree 1:1 版面（頂欄/行事曆清單/右直欄）；**農曆雙行日期**（對到參考圖）；雙擊開活動表；獨睇/toggle overlay | |
 | 2.1 | Event comments（chat＋貼相） | 🟨 待驗收 | 留言 API（列出/留言/刪除自己，outbox event.comment_created）35/35 tests；production 已部署；iOS 活動詳情真留言。貼相留待 2.4 相簿一齊做 | |
 | 2.2 | Memo | 🟨 待驗收 | CRUD+留言 API（38/38 tests，commentCount，outbox memo.*）；production 已部署；iOS 備忘錄列表/開新/詳情/留言/刪除全變真 | |
-| 2.3 | To-Do List | ⬜ | | |
+| 2.3 | To-Do List | 🟨 待驗收 | List CRUD + item 加/toggle(doneBy)/刪，done/total 計數，outbox todo.*；42/42 tests；production 已部署；iOS 全變真（開清單/加項/tick/刪） | |
 | 2.4 | Album | ⬜ | | |
 | 2.5 | Activity＋Notices | ⬜ | | |
 | 2.6 | Notifications | ⬜ | | |
