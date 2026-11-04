@@ -37,6 +37,7 @@ jobs:
           xcodebuild test -project MangoTime.xcodeproj -scheme MangoTime \
             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
             -derivedDataPath /tmp/dd \
+            -resultBundlePath /tmp/uat.xcresult \
             CODE_SIGNING_ALLOWED=NO \
             -only-testing:MangoTimeUITests 2>&1 | tee /tmp/uat.log | tail -30
 
@@ -51,3 +52,12 @@ jobs:
           name: uat-log
           path: /tmp/uat.log
           retention-days: 7
+
+      - name: Upload xcresult（失敗截圖）
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uat-xcresult
+          path: /tmp/uat.xcresult
+          retention-days: 7
+          compression-level: 9
