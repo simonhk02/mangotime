@@ -31,5 +31,5 @@
 | 5.1 | External calendar sync | ⬜ | | |
 | 5.2 | Public Calendar＋embed widget | 🟨 待驗收 | publicSlug 開/關 API + /v1/public/:slug（sanitize 唔洩 creatorId，55/55 tests）；web 唯讀月曆頁上咗 https://mangotime.149-28-154-219.sslip.io/public/<slug>（Chrome headless 實測渲染 OK）；iOS 邀請頁一撳開＋複製；embed widget 留返下一步 | |
 | 5.3 | Event Scan（AI 抽日期） | ⬜ | | |
-| 5.4 | 檔案附件 | ⬜ | | |
+| 5.4 | 檔案附件 | 🟨 待驗收 | Attachment model + base64 上傳/攞檔/刪除（57/57 tests，VPS live）；iOS 詳情頁 📎 附件區：PhotosPicker 加相 + 縮圖橫列；PDF 都收 | |
 | 5.5 | iCal import/export | ⬜ | | |
