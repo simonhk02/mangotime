@@ -52,19 +52,37 @@ struct PRow: View {
     }
 }
 
-struct PSheet<Content: View>: View {
+struct PSheet<Content: View, Bottom: View>: View {
     let title: String
     var onBack: () -> Void
     var backText: String = "‹"
     var right: AnyView? = nil
     @ViewBuilder var content: Content
+    @ViewBuilder var bottom: Bottom
     var body: some View {
         VStack(spacing: 0) {
             PNavBar(title, left: {
                 Button(action: onBack) { Text(backText).font(.title3).foregroundStyle(PT.orange) }
             }, right: { right })
             ScrollView { VStack(spacing: 0) { content }.padding(.horizontal, 16) }
+            bottom
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color(.systemBackground))
+                .overlay(Divider(), alignment: .top)
         }
+    }
+}
+
+// 冇 bottom bar 嘅版本（向後兼容）
+extension PSheet where Bottom == EmptyView {
+    init(title: String, onBack: @escaping () -> Void, backText: String = "‹", right: AnyView? = nil, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.onBack = onBack
+        self.backText = backText
+        self.right = right
+        self.content = content()
+        self.bottom = EmptyView()
     }
 }
 

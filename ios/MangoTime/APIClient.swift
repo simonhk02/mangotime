@@ -77,6 +77,12 @@ final class APIClient: ObservableObject {
         currentUser = res.user
     }
 
+    /// 本地登出（唔 call server——測試用）
+    func logoutLocal() {
+        token = nil
+        currentUser = nil
+    }
+
     func logout() async {
         struct Empty: Encodable {}
         _ = try? await request("POST", "/v1/auth/logout", body: Optional<Empty>.none) as EmptyResponse

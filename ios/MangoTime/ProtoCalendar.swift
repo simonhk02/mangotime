@@ -218,7 +218,7 @@ struct ProtoCalendarList: View {
     }
 
     private var liveList: some View {
-        PSheet(title: "行事曆清單", onBack: { s.screen = .month }) {
+        PSheet(title: "行事曆清單", onBack: { s.screen = .month }, content: {
             VStack(spacing: 0) {
                 ForEach(s.liveCalendars) { cal in
                     Button {
@@ -242,23 +242,6 @@ struct ProtoCalendarList: View {
                 }
             }
             .padding(.top, 8)
-            HStack {
-                TextField("新行事曆名稱", text: $newName).textFieldStyle(.roundedBorder)
-                    .accessibilityIdentifier("cal_new_name")
-                Button {
-                    let name = newName.trimmingCharacters(in: .whitespaces)
-                    guard !name.isEmpty else { return }
-                    hideKeyboard()
-                    newName = ""
-                    Task { await s.createLiveCalendar(name: name) }
-                } label: {
-                    Text("建立").bold().foregroundStyle(.white)
-                        .padding(.horizontal, 14).padding(.vertical, 8)
-                        .background(PT.orange).clipShape(RoundedRectangle(cornerRadius: 8))
-                }
-                .accessibilityIdentifier("cal_create_btn")
-            }
-            .padding(.top, 12)
             Divider().padding(.vertical, 10)
             Text("用邀請碼加入").font(.caption).foregroundStyle(PT.soft)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -280,7 +263,24 @@ struct ProtoCalendarList: View {
                 }
             }
             if let e = joinError { Text(e).font(.caption).foregroundStyle(.red).frame(maxWidth: .infinity, alignment: .leading) }
-        }
+        }, bottom: {
+            HStack {
+                TextField("新行事曆名稱", text: $newName).textFieldStyle(.roundedBorder)
+                    .accessibilityIdentifier("cal_new_name")
+                Button {
+                    let name = newName.trimmingCharacters(in: .whitespaces)
+                    guard !name.isEmpty else { return }
+                    hideKeyboard()
+                    newName = ""
+                    Task { await s.createLiveCalendar(name: name) }
+                } label: {
+                    Text("建立").bold().foregroundStyle(.white)
+                        .padding(.horizontal, 14).padding(.vertical, 8)
+                        .background(PT.orange).clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .accessibilityIdentifier("cal_create_btn")
+            }
+        })
     }
 
     private var mockList: some View {

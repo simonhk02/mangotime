@@ -220,6 +220,12 @@ struct ProtoRootView: View {
         .onAppear {
             guard live, s.api == nil else { return }
             s.api = APIClient.shared
+            // 測試用：`-fresh` 清 token 由登入頁開始
+            if ProcessInfo.processInfo.arguments.contains("-fresh") {
+                UserDefaults.standard.removeObject(forKey: "mt_token")
+                UserDefaults.standard.removeObject(forKey: "mt_base_url")
+                APIClient.shared.logoutLocal()
+            }
             if APIClient.shared.token != nil {
                 s.screen = .month
                 Task { await s.loadLive() }

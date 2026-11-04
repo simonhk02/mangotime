@@ -192,7 +192,7 @@ struct ProtoMemos: View {
     }
 
     private var liveList: some View {
-        PSheet(title: "備忘錄", onBack: { s.screen = .other }) {
+        PSheet(title: "備忘錄", onBack: { s.screen = .other }, content: {
             ForEach(liveMemos) { m in
                 Button { s.screen = .liveMemoDetail(m) } label: {
                     HStack(spacing: 10) {
@@ -213,6 +213,7 @@ struct ProtoMemos: View {
             if liveMemos.isEmpty {
                 EmptyState(icon: "📝", title: "找不到備忘錄。", sub: "請透過下方建立新的備忘錄。")
             }
+        }, bottom: {
             HStack {
                 TextField("新備忘錄標題", text: $newTitle).textFieldStyle(.roundedBorder)
                     .accessibilityIdentifier("memo_new_title")
@@ -232,8 +233,7 @@ struct ProtoMemos: View {
                         .background(PT.orange).clipShape(RoundedRectangle(cornerRadius: 8))
                 }
             }
-            .padding(.top, 12)
-        }
+        })
         .onAppear { Task { await reload() } }
     }
 
@@ -368,7 +368,7 @@ struct ProtoTodos: View {
     }
 
     private var liveTodos: some View {
-        PSheet(title: "待辦清單", onBack: { s.screen = .other }) {
+        PSheet(title: "待辦清單", onBack: { s.screen = .other }, content: {
             ForEach(liveLists) { list in
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
@@ -428,6 +428,7 @@ struct ProtoTodos: View {
             if liveLists.isEmpty {
                 EmptyState(icon: "✅", title: "找不到待辦清單。", sub: "請透過下方建立新的清單。")
             }
+        }, bottom: {
             HStack {
                 TextField("新清單名稱", text: $newListTitle).textFieldStyle(.roundedBorder)
                 Button {
@@ -446,8 +447,7 @@ struct ProtoTodos: View {
                         .background(PT.orange).clipShape(RoundedRectangle(cornerRadius: 8))
                 }
             }
-            .padding(.top, 12)
-        }
+        })
         .onAppear { Task { await reload() } }
     }
 
