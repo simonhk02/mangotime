@@ -461,6 +461,22 @@ extension APIClient {
         let res: Res = try await request("GET", "/v1/calendars/\(calendarId)/externals/events")
         return res.events
     }
+    // 5.3 Event Scan
+    func scanImage(calendarId: String, data: Data, mimeType: String) async throws -> [MTScannedEvent] {
+        struct Req: Encodable { let data: String; let mimeType: String }
+        struct Res: Codable { let events: [MTScannedEvent] }
+        let res: Res = try await request("POST", "/v1/calendars/\(calendarId)/scan", body: Req(data: data.base64EncodedString(), mimeType: mimeType))
+        return res.events
+    }
+}
+
+struct MTScannedEvent: Codable, Identifiable, Hashable {
+    var id: String { title + date + (time ?? "") }
+    let title: String
+    let date: String
+    let time: String?
+    let location: String?
+    let note: String?
 }
 
 // MARK: - External calendars (task 5.1)

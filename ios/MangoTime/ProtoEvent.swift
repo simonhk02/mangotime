@@ -1,6 +1,89 @@
 import SwiftUI
 import PhotosUI
 
+struct ScanRow: View {
+    let ev: MTScannedEvent
+    let apply: (MTScannedEvent) -> Void
+
+    private var subtitle: String {
+        var parts = ev.date
+        if let t = ev.time { parts += " " + t } else { parts += "（全日）" }
+        if let l = ev.location { parts += " · " + l }
+        return parts
+    }
+
+    var body: some View {
+        Button { apply(ev) } label: {
+            rowLabel
+        }
+        .buttonStyle(.plain)
+        .overlay(Divider().opacity(0.5), alignment: .bottom)
+    }
+
+    private var rowLabel: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "sparkles").foregroundStyle(PT.orange)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(ev.title).foregroundStyle(.primary)
+                Text(subtitle).font(.caption).foregroundStyle(PT.soft)
+            }
+            Spacer()
+        }
+        .padding(.vertical, 10)
+    }
+}
+
+/// 5.3 Event Scan 區（拆出嚟唔係為咗靚，係 Swift type checker 會爆）
+struct EventScanSection: View {
+    @EnvironmentObject var s: ProtoState
+    @Binding var scanning: Bool
+    @Binding var scanned: [MTScannedEvent]
+    @Binding var scanPhoto: PhotosPickerItem?
+    let apply: (MTScannedEvent) -> Void
+
+    var body: some View {
+        scanPicker
+        ForEach(scanned) { ev in
+            ScanRow(ev: ev, apply: apply)
+        }
+    }
+
+    private var scanPicker: some View {
+        PhotosPicker(selection: $scanPhoto, matching: .images) {
+            HStack(spacing: 10) {
+                Image(systemName: "camera.viewfinder")
+                    .font(.subheadline).foregroundStyle(PT.soft).frame(width: 20)
+                Text(scanning ? "AI 分析緊…" : "掃描圖片建立")
+                    .foregroundStyle(.primary)
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(PT.soft)
+            }
+            .padding(.vertical, 12)
+        }
+        .buttonStyle(.plain)
+        .overlay(Divider().opacity(0.6), alignment: .bottom)
+        .onChange(of: scanPhoto) { _, item in
+            Task { await runScan(item) }
+        }
+    }
+
+    private func runScan(_ item: PhotosPickerItem?) async {
+        guard let item,
+              let raw = try? await item.loadTransferable(type: Data.self),
+              let img = UIImage(data: raw),
+              let jpg = img.jpegData(compressionQuality: 0.7),
+              let calId = s.activeCalendarId else { scanPhoto = nil; return }
+        scanning = true
+        defer { scanning = false; scanPhoto = nil }
+        if let events = try? await s.api?.scanImage(calendarId: calId, data: jpg, mimeType: "image/jpeg") {
+            scanned = events
+            if events.isEmpty { s.note("圖入面搵唔到活動") }
+        } else {
+            s.note("掃描失敗，試吓再影")
+        }
+    }
+}
+
 struct ProtoEventForm: View {
     @EnvironmentObject var s: ProtoState
     var editing: MTEvent? = nil
@@ -12,6 +95,9 @@ struct ProtoEventForm: View {
     @State private var date = Date()
     @State private var loc = ""
     @State private var noteText = ""
+    @State private var scanPhoto: PhotosPickerItem?
+    @State private var scanning = false
+    @State private var scanned: [MTScannedEvent] = []
     private var labelKeys = ["bright-orange", "emerald", "blue", "red", "purple"]
 
     init(editing: MTEvent? = nil) {
@@ -49,6 +135,19 @@ struct ProtoEventForm: View {
                 .padding(.vertical, 12)
                 .overlay(Divider(), alignment: .bottom)
                 .accessibilityIdentifier("event_title")
+            if s.api != nil && editing == nil {
+                EventScanSection(
+                    scanning: $scanning, scanned: $scanned, scanPhoto: $scanPhoto,
+                    apply: { ev in
+                        title = ev.title
+                        if let d = parseISODate(ev.date + "T" + (ev.time ?? "00:00") + ":00+08:00") { date = d }
+                        allDay = ev.time == nil
+                        if let l = ev.location { loc = l }
+                        if let n = ev.note { noteText = n }
+                        scanned = []
+                        s.note("已套用 ✓ 檢查吓先好保存")
+                    })
+            }
             PRow(icon: "calendar", label: "行事曆", value: "家庭日曆") { s.note("揀行事曆（mock）") }
             PRow(icon: "doc.text", label: "儲存為備忘錄", toggle: $saveAsMemo)
             Button { showLabels.toggle() } label: {
