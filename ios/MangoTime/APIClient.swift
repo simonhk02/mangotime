@@ -131,7 +131,7 @@ struct AnyEncodable: Encodable {
 
 // MARK: - Events (task 1.4 API)
 
-struct MTEvent: Codable, Identifiable {
+struct MTEvent: Codable, Identifiable, Hashable {
     let id: String
     let calendarId: String
     let title: String
