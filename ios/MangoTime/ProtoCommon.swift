@@ -1,5 +1,38 @@
 import SwiftUI
 
+/// 自家製 MangoTime logo（純 SwiftUI，唔使圖檔）：橙色芒果身 + 綠葉
+struct MangoLogo: View {
+    var size: CGFloat = 64
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            // 葉
+            Ellipse()
+                .fill(PT.green)
+                .frame(width: size * 0.28, height: size * 0.14)
+                .rotationEffect(.degrees(-30))
+                .offset(x: size * 0.12, y: -size * 0.04)
+            // 芒果身
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [Color(red: 1.0, green: 0.62, blue: 0.35), PT.orange],
+                        center: .topLeading, startRadius: 0, endRadius: size
+                    )
+                )
+                .frame(width: size, height: size)
+                .scaleEffect(x: 0.92, y: 1.0)
+            // 高光
+            Ellipse()
+                .fill(.white.opacity(0.35))
+                .frame(width: size * 0.22, height: size * 0.12)
+                .rotationEffect(.degrees(-25))
+                .offset(x: -size * 0.2, y: size * 0.16)
+        }
+        .frame(width: size, height: size * 1.05)
+        .accessibilityLabel("MangoTime logo")
+    }
+}
+
 /// 原型共用件
 struct PNavBar<Left: View, Right: View>: View {
     let title: String
@@ -57,6 +90,7 @@ struct PSheet<Content: View, Bottom: View>: View {
     var onBack: () -> Void
     var backText: String = "‹"
     var right: AnyView? = nil
+    var onRefresh: (() async -> Void)? = nil
     @ViewBuilder var content: Content
     @ViewBuilder var bottom: Bottom
     var body: some View {
@@ -64,7 +98,16 @@ struct PSheet<Content: View, Bottom: View>: View {
             PNavBar(title, left: {
                 Button(action: onBack) { Text(backText).font(.title3).foregroundStyle(PT.orange) }
             }, right: { right })
-            ScrollView { VStack(spacing: 0) { content }.padding(.horizontal, 16) }
+            if let onRefresh {
+                ScrollView {
+                    VStack(spacing: 0) { content }.padding(.horizontal, 16)
+                }
+                .refreshable { await onRefresh() }
+            } else {
+                ScrollView {
+                    VStack(spacing: 0) { content }.padding(.horizontal, 16)
+                }
+            }
             bottom
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
@@ -76,11 +119,12 @@ struct PSheet<Content: View, Bottom: View>: View {
 
 // 冇 bottom bar 嘅版本（向後兼容）
 extension PSheet where Bottom == EmptyView {
-    init(title: String, onBack: @escaping () -> Void, backText: String = "‹", right: AnyView? = nil, @ViewBuilder content: () -> Content) {
+    init(title: String, onBack: @escaping () -> Void, backText: String = "‹", right: AnyView? = nil, onRefresh: (() async -> Void)? = nil, @ViewBuilder content: () -> Content) {
         self.title = title
         self.onBack = onBack
         self.backText = backText
         self.right = right
+        self.onRefresh = onRefresh
         self.content = content()
         self.bottom = EmptyView()
     }

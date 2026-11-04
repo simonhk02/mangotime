@@ -65,7 +65,12 @@ struct ProtoMonthScreen: View {
             .pickerStyle(.segmented)
             .padding(.horizontal, 14).padding(.vertical, 6)
 
-            if s.screen == .month { monthGrid } else { weekView }
+            if s.screen == .month {
+                ScrollView {
+                    monthGrid
+                }
+                .refreshable { await s.loadLive() }
+            } else { weekView }
         }
     }
 
@@ -218,7 +223,7 @@ struct ProtoCalendarList: View {
     }
 
     private var liveList: some View {
-        PSheet(title: "行事曆清單", onBack: { s.screen = .month }, content: {
+        PSheet(title: "行事曆清單", onBack: { s.screen = .month }, onRefresh: { await s.loadLive() }, content: {
             VStack(spacing: 0) {
                 ForEach(s.liveCalendars) { cal in
                     Button {

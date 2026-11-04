@@ -49,7 +49,12 @@ struct ProtoFeed: View {
                     }
                     ForEach(liveItems) { item in
                         HStack(spacing: 10) {
-                            Text(item.icon).font(.title3)
+                            Image(systemName: feedIcon(item.type))
+                                .font(.subheadline)
+                                .foregroundStyle(PT.orange)
+                                .frame(width: 28, height: 28)
+                                .background(PT.orange.opacity(0.12))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("\(item.actorName) \(item.text)").font(.subheadline)
                                 Text(relTime(item.createdAt)).font(.caption).foregroundStyle(PT.soft)
@@ -84,8 +89,29 @@ struct ProtoFeed: View {
                     }
                 }
             }
+            .refreshable { await reload() }
         }
         .onAppear { Task { await reload() } }
+    }
+
+    /// activity type → SF Symbol（唔用 emoji）
+    private func feedIcon(_ type: String) -> String {
+        switch type {
+        case "calendar.created", "calendar.renamed": return "calendar"
+        case "calendar.member_joined": return "person.badge.plus"
+        case "calendar.member_removed": return "person.badge.minus"
+        case "calendar.invite_created": return "link"
+        case "event.created", "event.updated": return "calendar.badge.plus"
+        case "event.deleted": return "trash"
+        case "event.comment_created", "memo.comment_created": return "text.bubble"
+        case "memo.created", "memo.updated": return "note.text"
+        case "memo.deleted", "todo.list_deleted": return "trash"
+        case "todo.list_created", "todo.item_created": return "checklist"
+        case "todo.item_done": return "checkmark.circle.fill"
+        case "todo.item_undone": return "circle"
+        case "photo.uploaded": return "photo"
+        default: return "circle"
+        }
     }
 
     private var mockFeed: some View {
@@ -278,7 +304,7 @@ struct ProtoMemos: View {
     }
 
     private var liveList: some View {
-        PSheet(title: "備忘錄", onBack: { s.screen = .other }, content: {
+        PSheet(title: "備忘錄", onBack: { s.screen = .other }, onRefresh: { await reload() }, content: {
             ForEach(liveMemos) { m in
                 Button { s.screen = .liveMemoDetail(m) } label: {
                     HStack(spacing: 10) {
@@ -454,7 +480,7 @@ struct ProtoTodos: View {
     }
 
     private var liveTodos: some View {
-        PSheet(title: "待辦清單", onBack: { s.screen = .other }, content: {
+        PSheet(title: "待辦清單", onBack: { s.screen = .other }, onRefresh: { await reload() }, content: {
             ForEach(liveLists) { list in
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
@@ -589,7 +615,7 @@ struct ProtoAlbum: View {
     }
 
     private var liveAlbum: some View {
-        PSheet(title: "相簿", onBack: { s.screen = .other }, right: AnyView(
+        PSheet(title: "相簿", onBack: { s.screen = .other }, onRefresh: { await reload() }, right: AnyView(
             PhotosPicker(selection: $pickedItem, matching: .images) {
                 if uploading { ProgressView() } else { Text("＋").foregroundStyle(PT.orange) }
             }
@@ -673,7 +699,7 @@ struct ProtoMembers: View {
     }
 
     private var liveMembers: some View {
-        PSheet(title: "成員（\(s.liveMembers.count)）", onBack: { s.screen = .other }) {
+        PSheet(title: "成員（\(s.liveMembers.count)）", onBack: { s.screen = .other }, onRefresh: { await s.loadMembers() }) {
             ForEach(Array(s.liveMembers.enumerated()), id: \.element.id) { i, m in
                 HStack(spacing: 12) {
                     Circle().fill(colors[i % colors.count]).frame(width: 36, height: 36)

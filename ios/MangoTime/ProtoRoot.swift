@@ -221,6 +221,7 @@ struct ProtoRootView: View {
         .overlay { if s.upsell { PremiumUpsell() } }
         .overlay { if s.photoPerm { PhotoPermAlert() } }
         .environmentObject(s)
+        .animation(.easeInOut(duration: 0.2), value: s.screen)
         .onAppear {
             guard live, s.api == nil else { return }
             s.api = APIClient.shared
@@ -243,10 +244,10 @@ struct ProtoRootView: View {
 struct SplashView: View {
     @EnvironmentObject var s: ProtoState
     var body: some View {
-        Button { s.screen = .login } label: {
+        Button { withAnimation(.easeInOut(duration: 0.25)) { s.screen = .login } } label: {
             VStack(spacing: 12) {
                 Spacer()
-                Text("🥭").font(.system(size: 84))
+                MangoLogo(size: 88)
                 Text("MangoTime").font(.largeTitle).bold()
                 Text("一齊夾時間").foregroundStyle(PT.soft)
                 Spacer()
@@ -271,6 +272,7 @@ struct ProtoLoginView: View {
     var body: some View {
         VStack(spacing: 14) {
             Spacer()
+            MangoLogo(size: 64)
             Text("MangoTime").font(.largeTitle).bold()
             Text("一齊夾時間，一家人一個曆").font(.subheadline).foregroundStyle(PT.soft)
             if registerMode {
@@ -349,9 +351,9 @@ struct ProtoLoginView: View {
 struct ProtoTabBar: View {
     @EnvironmentObject var s: ProtoState
     func tab(_ icon: String, _ label: String, _ target: ProtoScreen, _ active: Bool, _ id: String) -> some View {
-        Button { s.screen = target } label: {
+        Button { withAnimation(.easeInOut(duration: 0.18)) { s.screen = target } } label: {
             VStack(spacing: 2) {
-                Text(icon).font(.system(size: 20))
+                Image(systemName: icon).font(.system(size: 20))
                 Text(label).font(.system(size: 10))
             }
             .foregroundStyle(active ? PT.orange : PT.soft)
@@ -362,17 +364,18 @@ struct ProtoTabBar: View {
     }
     var body: some View {
         HStack(alignment: .bottom) {
-            tab("📅", "行事曆", .month, s.screen == .month || s.screen == .weekly, "tab_calendar")
-            tab("📰", "最新動態", .feed, s.screen == .feed, "tab_feed")
-            Button { s.screen = .create } label: {
-                Text("＋").font(.system(size: 26, weight: .bold)).foregroundStyle(.white)
+            tab("calendar", "行事曆", .month, s.screen == .month || s.screen == .weekly, "tab_calendar")
+            tab("newspaper", "最新動態", .feed, s.screen == .feed, "tab_feed")
+            Button { withAnimation(.easeInOut(duration: 0.18)) { s.screen = .create } } label: {
+                Image(systemName: "plus").font(.system(size: 24, weight: .bold)).foregroundStyle(.white)
                     .frame(width: 50, height: 50).background(PT.orange).clipShape(Circle())
                     .shadow(color: PT.orange.opacity(0.4), radius: 6, y: 3)
             }
             .frame(maxWidth: .infinity)
             .accessibilityIdentifier("tab_plus")
-            tab("🔔", "通知", .notices, s.screen == .notices, "tab_notices")
-            tab("☰", "其他", .other, s.screen == .other, "tab_other")
+            .accessibilityLabel("新增")
+            tab("bell", "通知", .notices, s.screen == .notices, "tab_notices")
+            tab("line.3.horizontal", "其他", .other, s.screen == .other, "tab_other")
         }
         .padding(.top, 6).padding(.bottom, 4)
         .background(Color(.systemBackground).shadow(radius: 2))
