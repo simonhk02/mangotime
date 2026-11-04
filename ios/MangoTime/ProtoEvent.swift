@@ -160,7 +160,7 @@ struct ProtoLiveEventDetail: View {
             if let loc = ev.location, !loc.isEmpty { PRow(label: "📍 地點", value: loc) }
             if ev.repeatRule != "none" { PRow(label: "🔁 重複", value: ev.repeatRule) }
             if let note = ev.note, !note.isEmpty { PRow(label: "🗒 備註", value: note) }
-            ChatBox(msgs: [])
+            LiveChat(eventId: ev.id)
             Button {
                 Task { await s.deleteLiveEvent(ev) }
             } label: {
@@ -169,6 +169,53 @@ struct ProtoLiveEventDetail: View {
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.red))
             }
             .padding(.top, 18)
+        }
+    }
+}
+
+/// 真留言（task 2.1）
+struct LiveChat: View {
+    let eventId: String
+    @State private var comments: [MTComment] = []
+    @State private var draft = ""
+    @State private var busy = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("留言").font(.caption).foregroundStyle(PT.soft)
+            if comments.isEmpty {
+                Text("仲未有留言").font(.caption).foregroundStyle(PT.soft)
+            }
+            ForEach(comments) { c in
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(c.body).font(.subheadline)
+                    Text(c.authorName).font(.caption2).foregroundStyle(PT.soft)
+                }
+                .padding(.horizontal, 12).padding(.vertical, 8)
+                .background(Color(.secondarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            HStack {
+                TextField("留言…", text: $draft).textFieldStyle(.roundedBorder)
+                Button {
+                    let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !text.isEmpty, !busy else { return }
+                    busy = true
+                    Task {
+                        defer { busy = false }
+                        if let c = try? await APIClient.shared.postComment(eventId: eventId, body: text) {
+                            comments.append(c)
+                            draft = ""
+                        }
+                    }
+                } label: {
+                    Text("送出").foregroundStyle(PT.orange).bold()
+                }
+            }
+        }
+        .padding(.top, 14)
+        .task {
+            comments = (try? await APIClient.shared.listComments(eventId: eventId)) ?? []
         }
     }
 }

@@ -1,10 +1,19 @@
 // Task 1.3 tests：invite link 開/攞/接受 + members list + 權限
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { rmSync } from "node:fs";
-import { buildApp } from "../src/app.js";
+import { execSync } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const DB = "./data/test-invites.db";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const TEST_DB = `/tmp/mangotime-test-inv-${process.pid}.db`;
+process.env.DATABASE_URL = `file:${TEST_DB}`;
+process.env.NODE_ENV = "test";
+
+const serverDir = path.resolve(__dirname, "..");
+execSync("npx prisma db push --skip-generate", { cwd: serverDir, env: { ...process.env }, stdio: "pipe" });
+
+const { buildApp } = await import("../src/app.js");
 let app: Awaited<ReturnType<typeof buildApp>>;
 let ownerToken = "";
 let friendToken = "";
@@ -12,7 +21,6 @@ let calendarId = "";
 let code = "";
 
 before(async () => {
-  rmSync(DB, { force: true });
   app = await buildApp();
   const r1 = await app.inject({ method: "POST", url: "/v1/auth/register", payload: { email: "owner@test.hk", password: "password123", displayName: "阿主" } });
   ownerToken = r1.json().token;

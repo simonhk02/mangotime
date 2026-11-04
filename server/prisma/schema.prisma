@@ -19,6 +19,7 @@ model User {
   memberships  CalendarMember[] @relation("Memberships")
   createdCalendars Calendar[]   @relation("CreatedCalendars")
   createdEvents    Event[]      @relation("CreatedEvents")
+  comments         Comment[]
 }
 
 model Session {
@@ -97,6 +98,20 @@ model Event {
   creator    User     @relation("CreatedEvents", fields: [creatorId], references: [id])
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  comments   Comment[]
 
   @@index([calendarId, startsAt])
+}
+
+// Task 2.1 — Event comment（活動留言 chat）
+model Comment {
+  id        String   @id @default(cuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([eventId, createdAt])
 }

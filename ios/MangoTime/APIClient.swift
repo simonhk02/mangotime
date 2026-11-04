@@ -219,6 +219,31 @@ extension APIClient {
     }
 }
 
+// MARK: - Comments (task 2.1)
+
+struct MTComment: Codable, Identifiable {
+    let id: String
+    let body: String
+    let createdAt: String
+    let authorId: String
+    let authorName: String
+    let authorAvatar: String?
+}
+struct MTCommentWrap: Codable { let comment: MTComment }
+struct MTCommentList: Codable { let comments: [MTComment] }
+
+extension APIClient {
+    func listComments(eventId: String) async throws -> [MTComment] {
+        let res: MTCommentList = try await request("GET", "/v1/events/\(eventId)/comments")
+        return res.comments
+    }
+    func postComment(eventId: String, body: String) async throws -> MTComment {
+        struct Payload: Encodable { let body: String }
+        let res: MTCommentWrap = try await request("POST", "/v1/events/\(eventId)/comments", body: Payload(body: body))
+        return res.comment
+    }
+}
+
 func parseISODate(_ s: String) -> Date? {
     let f = ISO8601DateFormatter()
     f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
