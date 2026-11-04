@@ -334,6 +334,39 @@ extension APIClient {
     }
 }
 
+// MARK: - Photos (task 2.4)
+
+struct MTPhoto: Codable, Identifiable, Hashable {
+    let id: String
+    let url: String
+    let mimeType: String
+    let size: Int
+    let uploaderId: String
+    let uploaderName: String
+}
+struct MTPhotoWrap: Codable { let photo: MTPhoto }
+struct MTPhotoList: Codable { let photos: [MTPhoto] }
+
+extension APIClient {
+    func listPhotos(calendarId: String) async throws -> [MTPhoto] {
+        let res: MTPhotoList = try await request("GET", "/v1/calendars/\(calendarId)/photos")
+        return res.photos
+    }
+    func uploadPhoto(calendarId: String, data: Data, mimeType: String) async throws -> MTPhoto {
+        struct Payload: Encodable { let data, mimeType: String }
+        let res: MTPhotoWrap = try await request(
+            "POST", "/v1/calendars/\(calendarId)/photos",
+            body: Payload(data: data.base64EncodedString(), mimeType: mimeType)
+        )
+        return res.photo
+    }
+    func deletePhoto(id: String) async throws {
+        struct Empty: Encodable {}
+        let _: EmptyResponse = try await request("DELETE", "/v1/photos/\(id)", body: Optional<Empty>.none)
+    }
+    func fileURL(_ path: String) -> URL? { URL(string: baseURL + path) }
+}
+
 func parseISODate(_ s: String) -> Date? {
     let f = ISO8601DateFormatter()
     f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]

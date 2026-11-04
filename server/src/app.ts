@@ -8,6 +8,7 @@ import { registerInviteRoutes } from "./invites.js";
 import { registerCommentRoutes } from "./comments.js";
 import { registerMemoRoutes } from "./memos.js";
 import { registerTodoRoutes } from "./todos.js";
+import { registerPhotoRoutes } from "./photos.js";
 import { registerCalendarRoutes } from "./calendars.js";
 import { registerEventRoutes } from "./events.js";
 
@@ -23,7 +24,10 @@ export async function buildApp(prisma?: PrismaClient): Promise<FastifyInstance> 
   await db.$queryRawUnsafe("PRAGMA journal_mode=WAL;");
   const openapiYaml = await readFile(OPENAPI_PATH, "utf8");
 
-  const app = Fastify({ logger: process.env.NODE_ENV !== "test" });
+  const app = Fastify({
+    logger: process.env.NODE_ENV !== "test",
+    bodyLimit: 16 * 1024 * 1024, // 16MB：base64 相片上傳（原圖 8MB 上限）
+  });
 
   app.get("/health", async () => ({ ok: true, version: VERSION }));
   app.get("/v1/ping", async () => ({ pong: true }));
@@ -41,6 +45,7 @@ export async function buildApp(prisma?: PrismaClient): Promise<FastifyInstance> 
   registerCommentRoutes(app, db);
   registerMemoRoutes(app, db);
   registerTodoRoutes(app, db);
+  registerPhotoRoutes(app, db);
   registerCalendarRoutes(app, db);
   registerEventRoutes(app, db);
 

@@ -1,4 +1,6 @@
 import SwiftUI
+import PhotosUI
+import UniformTypeIdentifiers
 
 struct ProtoFeed: View {
     @EnvironmentObject var s: ProtoState
@@ -488,7 +490,80 @@ struct ProtoTodos: View {
 
 struct ProtoAlbum: View {
     @EnvironmentObject var s: ProtoState
+    @State private var livePhotos: [MTPhoto] = []
+    @State private var pickedItem: PhotosPickerItem?
+    @State private var uploading = false
+    @State private var busyId: String?
+
     var body: some View {
+        if s.api != nil { liveAlbum } else { mockAlbum }
+    }
+
+    private func reload() async {
+        guard let calId = s.activeCalendarId else { return }
+        livePhotos = (try? await s.api?.listPhotos(calendarId: calId)) ?? []
+    }
+
+    private var liveAlbum: some View {
+        PSheet(title: "相簿", onBack: { s.screen = .other }, right: AnyView(
+            PhotosPicker(selection: $pickedItem, matching: .images) {
+                if uploading { ProgressView() } else { Text("＋").foregroundStyle(PT.orange) }
+            }
+            .onChange(of: pickedItem) { _, item in
+                guard let item else { return }
+                uploading = true
+                Task {
+                    defer { uploading = false; pickedItem = nil }
+                    guard let data = try? await item.loadTransferable(type: Data.self),
+                          let calId = s.activeCalendarId else { return }
+                    // HEIC/JPEG 都得；壓縮過 8MB 先上
+                    var mime = "image/jpeg"
+                    var payload = data
+                    if let uiimg = UIImage(data: data), let jpg = uiimg.jpegData(compressionQuality: 0.8) {
+                        payload = jpg
+                    } else if data.count > 7_000_000 {
+                        s.note("相太大，揀張細啲嘅"); return
+                    }
+                    if let uti = item.supportedContentTypes.first, uti.conforms(to: .png) { mime = "image/png" }
+                    _ = try? await s.api?.uploadPhoto(calendarId: calId, data: payload, mimeType: mime)
+                    await reload()
+                    s.note("已上傳 ✓")
+                }
+            }
+        )) {
+            if livePhotos.isEmpty {
+                EmptyState(icon: "🖼", title: "仲未有相。", sub: "撳右上 ＋ 上傳第一張。")
+            }
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
+                ForEach(livePhotos) { p in
+                    AsyncImage(url: s.api?.fileURL(p.url)) { phase in
+                        switch phase {
+                        case .success(let img):
+                            img.resizable().scaledToFill()
+                        default:
+                            Color(.secondarySystemBackground)
+                        }
+                    }
+                    .frame(maxWidth: .infinity).aspectRatio(1, contentMode: .fit)
+                    .clipped()
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .onLongPressGesture {
+                        guard p.uploaderId == s.api?.currentUser?.id else { return }
+                        busyId = p.id
+                        Task {
+                            try? await s.api?.deletePhoto(id: p.id)
+                            await reload()
+                            s.note("已刪除 ✓")
+                        }
+                    }
+                }
+            }
+            .padding(.top, 10)
+        }
+        .onAppear { Task { await reload() } }
+    }
+
+    private var mockAlbum: some View {
         PSheet(title: "相簿", onBack: { s.screen = .other }, right: AnyView(
             Button { s.photoPerm = true } label: { Text("＋").foregroundStyle(PT.orange) }
         )) {
