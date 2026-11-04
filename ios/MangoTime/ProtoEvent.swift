@@ -225,7 +225,9 @@ struct LiveChat: View {
 struct ProtoSearch: View {
     @EnvironmentObject var s: ProtoState
     @State private var q = ""
-    var results: [MockEvent] {
+    @State private var liveResults: [MTEvent] = []
+    @State private var searching = false
+    var mockResults: [MockEvent] {
         q.isEmpty ? Mock.events : Mock.events.filter { $0.title.contains(q) }
     }
     var body: some View {
@@ -233,6 +235,12 @@ struct ProtoSearch: View {
             HStack {
                 Image(systemName: "magnifyingglass").foregroundStyle(PT.soft)
                 TextField("關鍵字…", text: $q)
+                    .onSubmit { Task { await runSearch() } }
+                    .onChange(of: q) { _, v in
+                        if v.isEmpty { liveResults = [] }
+                        else { Task { await runSearch() } }
+                    }
+                if searching { ProgressView() }
             }
             .padding(9).background(Color(.secondarySystemBackground)).clipShape(RoundedRectangle(cornerRadius: 10))
             .padding(.top, 10)
@@ -240,21 +248,49 @@ struct ProtoSearch: View {
                 .font(.caption).foregroundStyle(PT.soft)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.vertical, 8)
-            ForEach(results) { ev in
-                Button { s.screen = .eventDetail(ev) } label: {
-                    HStack(spacing: 10) {
-                        Circle().fill(ev.color).frame(width: 10, height: 10)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(ev.title).foregroundStyle(.primary)
-                            Text("11月\(ev.day)日 \(ev.time)").font(.caption).foregroundStyle(PT.soft)
+            if s.api != nil {
+                ForEach(liveResults) { ev in
+                    Button { s.screen = .liveEventDetail(ev) } label: {
+                        HStack(spacing: 10) {
+                            Circle().fill(PT.orange).frame(width: 10, height: 10)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(ev.title).foregroundStyle(.primary)
+                                Text(ev.startsAt.prefix(10)).font(.caption).foregroundStyle(PT.soft)
+                            }
+                            Spacer()
                         }
-                        Spacer()
+                        .padding(.vertical, 10)
+                        .overlay(Divider().opacity(0.5), alignment: .bottom)
                     }
-                    .padding(.vertical, 10)
-                    .overlay(Divider().opacity(0.5), alignment: .bottom)
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
+                if !q.isEmpty && liveResults.isEmpty && !searching {
+                    Text("搵唔到「\(q)」").font(.caption).foregroundStyle(PT.soft).padding(.top, 8)
+                }
+            } else {
+                ForEach(mockResults) { ev in
+                    Button { s.screen = .eventDetail(ev) } label: {
+                        HStack(spacing: 10) {
+                            Circle().fill(ev.color).frame(width: 10, height: 10)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(ev.title).foregroundStyle(.primary)
+                                Text("11月\(ev.day)日 \(ev.time)").font(.caption).foregroundStyle(PT.soft)
+                            }
+                            Spacer()
+                        }
+                        .padding(.vertical, 10)
+                        .overlay(Divider().opacity(0.5), alignment: .bottom)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
         }
+    }
+
+    private func runSearch() async {
+        guard let calId = s.activeCalendarId, !q.trimmingCharacters(in: .whitespaces).isEmpty else { liveResults = []; return }
+        searching = true
+        defer { searching = false }
+        liveResults = (try? await s.api?.searchEvents(calendarId: calId, q: q)) ?? []
     }
 }

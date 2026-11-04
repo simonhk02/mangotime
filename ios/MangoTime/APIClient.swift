@@ -389,6 +389,10 @@ extension APIClient {
         let res: MTNoticeWrap = try await request("GET", "/v1/notices")
         return res.notices
     }
+    func searchEvents(calendarId: String, q: String) async throws -> [MTEvent] {
+        let res: EventListResponse = try await request("GET", "/v1/calendars/\(calendarId)/events/search?q=\(q.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? q)")
+        return res.events
+    }
 }
 
 struct MTNotice: Codable, Identifiable, Hashable {

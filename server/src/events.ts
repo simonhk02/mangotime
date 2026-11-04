@@ -140,6 +140,30 @@ export function registerEventRoutes(app: FastifyInstance, prisma: PrismaClient) 
     return { event: publicEvent(event) };
   });
 
+  // Search events by title/location/note (case-insensitive contains)
+  app.get("/v1/calendars/:id/events/search", async (req, reply) => {
+    const user = await requireUser(prisma, req, reply);
+    if (!user) return;
+    const { id } = req.params as { id: string };
+    if (!(await requireCalendarMember(prisma, id, user.id, reply))) return;
+    const { q } = req.query as { q?: string };
+    if (!q?.trim()) return reply.code(400).send({ error: "q is required" });
+    const kw = q.trim();
+    const events = await prisma.event.findMany({
+      where: {
+        calendarId: id,
+        OR: [
+          { title: { contains: kw } },
+          { location: { contains: kw } },
+          { note: { contains: kw } },
+        ],
+      },
+      orderBy: { startsAt: "asc" },
+      take: 50,
+    });
+    return reply.send({ events: events.map(publicEvent) });
+  });
+
   // Delete event (creator of the event OR calendar creator).
   app.delete("/v1/events/:id", async (req, reply) => {
     const user = await requireUser(prisma, req, reply);
