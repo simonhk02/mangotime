@@ -13,6 +13,10 @@ struct ProtoEventForm: View {
     @State private var noteText = ""
     private var labelKeys = ["bright-orange", "emerald", "blue", "red", "purple"]
 
+    init(editing: MTEvent? = nil) {
+        self.editing = editing
+    }
+
     var body: some View {
         PSheet(title: editing == nil ? "新增活動" : "編輯活動", onBack: { s.screen = .month }, backText: "×", right: AnyView(
             Button {
