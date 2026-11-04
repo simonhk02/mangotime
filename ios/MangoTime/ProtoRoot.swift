@@ -34,6 +34,32 @@ final class ProtoState: ObservableObject {
     @Published var liveEvents: [MTEvent] = []
     @Published var activeCalendarId: String?
     @Published var loginError: String?
+    @Published var liveMembers: [MTMember] = []
+    @Published var inviteCode: String?
+
+    @MainActor
+    func loadMembers() async {
+        guard let api, let calId = activeCalendarId else { return }
+        liveMembers = (try? await api.listMembers(calendarId: calId)) ?? []
+    }
+
+    @MainActor
+    func loadInvite() async {
+        guard let api, let calId = activeCalendarId else { return }
+        inviteCode = try? await api.createInvite(calendarId: calId).code
+    }
+
+    @MainActor
+    func joinByCode(_ code: String) async -> String? {
+        guard let api else { return "未連接" }
+        do {
+            _ = try await api.acceptInvite(code: code)
+            await loadLive()
+            return nil
+        } catch {
+            return error.localizedDescription
+        }
+    }
 
     @MainActor
     func loadLive() async {

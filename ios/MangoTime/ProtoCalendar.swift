@@ -211,6 +211,8 @@ struct ProtoMonthScreen: View {
 struct ProtoCalendarList: View {
     @EnvironmentObject var s: ProtoState
     @State private var newName = ""
+    @State private var joinCode = ""
+    @State private var joinError: String?
     var body: some View {
         if s.api != nil { liveList } else { mockList }
     }
@@ -254,6 +256,27 @@ struct ProtoCalendarList: View {
                 }
             }
             .padding(.top, 12)
+            Divider().padding(.vertical, 10)
+            Text("用邀請碼加入").font(.caption).foregroundStyle(PT.soft)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack {
+                TextField("邀請碼（例如 9I7J3FIGNWK）", text: $joinCode).textFieldStyle(.roundedBorder)
+                    .textInputAutocapitalization(.characters).autocorrectionDisabled()
+                Button {
+                    let c = joinCode.trimmingCharacters(in: .whitespaces).uppercased()
+                    guard !c.isEmpty else { return }
+                    joinError = nil
+                    Task {
+                        if let err = await s.joinByCode(c) { joinError = err }
+                        else { joinCode = ""; s.note("已加入 ✓"); s.screen = .month }
+                    }
+                } label: {
+                    Text("加入").bold().foregroundStyle(.white)
+                        .padding(.horizontal, 14).padding(.vertical, 8)
+                        .background(PT.green).clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+            }
+            if let e = joinError { Text(e).font(.caption).foregroundStyle(.red).frame(maxWidth: .infinity, alignment: .leading) }
         }
     }
 

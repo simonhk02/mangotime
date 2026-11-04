@@ -304,7 +304,37 @@ struct ProtoAlbum: View {
 
 struct ProtoMembers: View {
     @EnvironmentObject var s: ProtoState
+    private let colors: [Color] = [PT.orange, PT.green, PT.blue, PT.purple, PT.red]
     var body: some View {
+        if s.api != nil { liveMembers } else { mockMembers }
+    }
+
+    private var liveMembers: some View {
+        PSheet(title: "成員（\(s.liveMembers.count)）", onBack: { s.screen = .other }) {
+            ForEach(Array(s.liveMembers.enumerated()), id: \.element.id) { i, m in
+                HStack(spacing: 12) {
+                    Circle().fill(colors[i % colors.count]).frame(width: 36, height: 36)
+                        .overlay(Text(String(m.displayName.prefix(1))).foregroundStyle(.white).bold())
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(m.displayName).bold()
+                        Text(m.role == "creator" ? "建立者" : "成員").font(.caption).foregroundStyle(PT.soft)
+                    }
+                    Spacer()
+                }
+                .padding(.vertical, 10)
+                .overlay(Divider().opacity(0.5), alignment: .bottom)
+            }
+            Button { s.screen = .invite } label: {
+                Text("＋ 邀請成員").bold().foregroundStyle(PT.orange)
+                    .frame(maxWidth: .infinity).padding(.vertical, 12)
+                    .background(PT.orange.opacity(0.12)).clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+            .padding(.top, 14)
+        }
+        .onAppear { Task { await s.loadMembers() } }
+    }
+
+    private var mockMembers: some View {
         PSheet(title: "成員（3）", onBack: { s.screen = .other }) {
             ForEach(Mock.members) { m in
                 HStack(spacing: 12) {
@@ -332,6 +362,41 @@ struct ProtoMembers: View {
 struct ProtoInvite: View {
     @EnvironmentObject var s: ProtoState
     var body: some View {
+        if s.api != nil { liveInvite } else { mockInvite }
+    }
+
+    private var liveInvite: some View {
+        PSheet(title: "邀請成員", onBack: { s.screen = .members }) {
+            Text("任何人有呢個碼就入到你嘅行事曆：")
+                .font(.caption).foregroundStyle(PT.soft)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 10)
+            HStack {
+                Text(s.inviteCode ?? "載入中…").font(.title3).bold().lineLimit(1)
+                Spacer()
+                Button {
+                    if let c = s.inviteCode {
+                        UIPasteboard.general.string = "mangotime.app/join/\(c)"
+                        s.note("已複製 ✓")
+                    }
+                } label: {
+                    Text("複製").bold().foregroundStyle(.white)
+                        .padding(.horizontal, 14).padding(.vertical, 7)
+                        .background(PT.orange).clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+            }
+            .padding(12)
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            Text("對方喺佢 app 嘅「行事曆清單」撳「用邀請碼加入」，輸入呢個碼就入到。")
+                .font(.caption).foregroundStyle(PT.soft)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 12)
+        }
+        .onAppear { Task { await s.loadInvite() } }
+    }
+
+    private var mockInvite: some View {
         PSheet(title: "邀請成員", onBack: { s.screen = .members }) {
             Text("任何人撳呢條連結就入到「家庭日曆」：")
                 .font(.caption).foregroundStyle(PT.soft)

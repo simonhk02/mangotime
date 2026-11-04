@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PrismaClient } from "@prisma/client";
 import { registerAuthRoutes } from "./auth.js";
+import { registerInviteRoutes } from "./invites.js";
 import { registerCalendarRoutes } from "./calendars.js";
 import { registerEventRoutes } from "./events.js";
 
@@ -33,6 +34,7 @@ export async function buildApp(prisma?: PrismaClient): Promise<FastifyInstance> 
   });
 
   registerAuthRoutes(app, db);
+  registerInviteRoutes(app, db);
   registerCalendarRoutes(app, db);
   registerEventRoutes(app, db);
 

@@ -182,6 +182,43 @@ extension APIClient {
     }
 }
 
+// MARK: - Invites & members (task 1.3)
+
+struct MTInvite: Codable { let code: String }
+struct MTInvitePreview: Codable { let code: String; let calendarName: String; let memberCount: Int }
+struct MTInviteWrap: Codable { let invite: MTInvite }
+struct MTInvitePreviewWrap: Codable { let invite: MTInvitePreview }
+struct MTAcceptResult: Codable { let calendarId: String; let alreadyMember: Bool }
+struct MTMember: Codable, Identifiable {
+    let userId: String
+    let role: String
+    let displayName: String
+    let email: String
+    let avatarUrl: String?
+    var id: String { userId }
+}
+struct MTMemberList: Codable { let members: [MTMember] }
+
+extension APIClient {
+    func createInvite(calendarId: String) async throws -> MTInvite {
+        struct Empty: Encodable {}
+        let res: MTInviteWrap = try await request("POST", "/v1/calendars/\(calendarId)/invites", body: Optional<Empty>.none)
+        return res.invite
+    }
+    func previewInvite(code: String) async throws -> MTInvitePreview {
+        let res: MTInvitePreviewWrap = try await request("GET", "/v1/invites/\(code)")
+        return res.invite
+    }
+    func acceptInvite(code: String) async throws -> MTAcceptResult {
+        struct Empty: Encodable {}
+        return try await request("POST", "/v1/invites/\(code)/accept", body: Optional<Empty>.none)
+    }
+    func listMembers(calendarId: String) async throws -> [MTMember] {
+        let res: MTMemberList = try await request("GET", "/v1/calendars/\(calendarId)/members")
+        return res.members
+    }
+}
+
 func parseISODate(_ s: String) -> Date? {
     let f = ISO8601DateFormatter()
     f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
