@@ -281,6 +281,16 @@ struct ProtoLoginView: View {
                 .accessibilityIdentifier("login_email")
             SecureField("密碼", text: $password).textFieldStyle(.roundedBorder)
                 .accessibilityIdentifier("login_password")
+            if !password.isEmpty && password.count < 8 {
+                Text("密碼最少 8 位（而家 \(password.count) 位）")
+                    .font(.caption).foregroundStyle(.orange)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            if !email.isEmpty && !email.contains("@") {
+                Text("電郵格式唔啱")
+                    .font(.caption).foregroundStyle(.orange)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
             if let err = s.loginError {
                 Text(err).font(.caption).foregroundStyle(.red)
             }
