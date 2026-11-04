@@ -57,6 +57,7 @@ struct PNavBar<Left: View, Right: View>: View {
 }
 
 struct PRow: View {
+    var icon: String? = nil
     let label: String
     var value: String = ""
     var valueColor: Color = PT.soft
@@ -66,7 +67,13 @@ struct PRow: View {
         Button {
             if let t = toggle { t.wrappedValue.toggle() } else { action?() }
         } label: {
-            HStack {
+            HStack(spacing: 10) {
+                if let icon {
+                    Image(systemName: icon)
+                        .font(.subheadline)
+                        .foregroundStyle(PT.soft)
+                        .frame(width: 20)
+                }
                 Text(label).foregroundStyle(.primary)
                 Spacer()
                 if let t = toggle {
@@ -145,7 +152,7 @@ struct ChatBox: View {
             }
             HStack {
                 TextField("留言…", text: $draft).textFieldStyle(.roundedBorder)
-                Button {} label: { Text("📷") }
+                Button {} label: { Image(systemName: "camera").foregroundStyle(PT.soft) }
                 Button {} label: { Text("送出").foregroundStyle(PT.orange).bold() }
             }
         }
@@ -159,7 +166,10 @@ struct EmptyState: View {
     let sub: String
     var body: some View {
         VStack(spacing: 10) {
-            Text(icon).font(.system(size: 44))
+            Image(systemName: icon)
+                .font(.system(size: 34))
+                .foregroundStyle(PT.soft.opacity(0.6))
+                .padding(.bottom, 2)
             Text(title).bold()
             Text(sub).font(.subheadline).foregroundStyle(PT.soft).multilineTextAlignment(.center)
         }

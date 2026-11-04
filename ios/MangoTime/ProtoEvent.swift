@@ -49,11 +49,11 @@ struct ProtoEventForm: View {
                 .padding(.vertical, 12)
                 .overlay(Divider(), alignment: .bottom)
                 .accessibilityIdentifier("event_title")
-            PRow(label: "📅 行事曆", value: "家庭日曆") { s.note("揀行事曆（mock）") }
-            PRow(label: "📄 儲存為備忘錄", toggle: $saveAsMemo)
+            PRow(icon: "calendar", label: "行事曆", value: "家庭日曆") { s.note("揀行事曆（mock）") }
+            PRow(icon: "doc.text", label: "儲存為備忘錄", toggle: $saveAsMemo)
             Button { showLabels.toggle() } label: {
                 HStack {
-                    Text("🏷 標籤").foregroundStyle(.primary)
+                    Label("標籤", systemImage: "tag").foregroundStyle(.primary)
                     Spacer()
                     Circle().fill(Mock.labels[labelIdx].1).frame(width: 10, height: 10)
                     Text(Mock.labels[labelIdx].0).font(.subheadline).foregroundStyle(PT.soft)
@@ -83,35 +83,35 @@ struct ProtoEventForm: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10))
             }
             if s.api != nil {
-                DatePicker("🕐 日期", selection: $date, displayedComponents: allDay ? [.date] : [.date, .hourAndMinute])
+                DatePicker("日期", selection: $date, displayedComponents: allDay ? [.date] : [.date, .hourAndMinute])
                 PRow(label: "全日", toggle: $allDay)
             } else {
-                PRow(label: "🕐 日期", value: "11月19日（週四）") { s.note("日期選擇器（mock）") }
+                PRow(icon: "clock", label: "日期", value: "11月19日（週四）") { s.note("日期選擇器（mock）") }
                 PRow(label: "全日", toggle: $allDay)
                 if !allDay { PRow(label: "時間", value: "19:30 – 23:00") { s.note("時間選擇器（mock）") } }
             }
-            PRow(label: "🔁 重複", value: "唔重複") { s.note("重複選項（mock）") }
-            PRow(label: "👥 成員", value: "全部成員") { s.note("揀成員（mock）") }
+            PRow(icon: "repeat", label: "重複", value: "唔重複") { s.note("重複選項（mock）") }
+            PRow(icon: "person.2", label: "成員", value: "全部成員") { s.note("揀成員（mock）") }
             if s.api != nil {
                 HStack {
-                    Text("📍 地點")
+                    Label("地點", systemImage: "mappin")
                     Spacer()
                     TextField("未填", text: $loc).multilineTextAlignment(.trailing).foregroundStyle(PT.soft)
                 }
                 .padding(.vertical, 12).overlay(Divider().opacity(0.6), alignment: .bottom)
                 HStack {
-                    Text("🗒 備註")
+                    Label("備註", systemImage: "note.text")
                     Spacer()
                     TextField("未填", text: $noteText).multilineTextAlignment(.trailing).foregroundStyle(PT.soft)
                 }
                 .padding(.vertical, 12).overlay(Divider().opacity(0.6), alignment: .bottom)
             } else {
-                PRow(label: "📍 地點", value: "未填") { s.note("地點輸入（mock）") }
-                PRow(label: "🔗 網址", value: "未填") { s.note("網址輸入（mock）") }
-                PRow(label: "🗒 備註", value: "未填") { s.screen = .noteEdit }
+                PRow(icon: "mappin", label: "地點", value: "未填") { s.note("地點輸入（mock）") }
+                PRow(icon: "link", label: "網址", value: "未填") { s.note("網址輸入（mock）") }
+                PRow(icon: "note.text", label: "備註", value: "未填") { s.screen = .noteEdit }
             }
-            PRow(label: "📎 上傳檔案", value: "＋") { s.upsell = true }
-            PRow(label: "☑ 待辦清單", value: "＋ 新增清單") { s.screen = .todos }
+            PRow(icon: "paperclip", label: "上傳檔案", value: "＋") { s.upsell = true }
+            PRow(icon: "checkmark.square", label: "待辦清單", value: "＋ 新增清單") { s.screen = .todos }
         }
         .onAppear {
             guard let ev = editing else { return }
@@ -137,7 +137,7 @@ struct ProtoNoteEdit: View {
                 .padding(6)
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(.separator)))
                 .padding(.top, 10)
-            PRow(label: "📎 上傳檔案", value: "＋") { s.upsell = true }
+            PRow(icon: "paperclip", label: "上傳檔案", value: "＋") { s.upsell = true }
         }
     }
 }
@@ -155,18 +155,18 @@ struct ProtoEventDetail: View {
         PSheet(title: ev.title, onBack: { s.screen = .month }, right: AnyView(
             Button { s.note("編輯（mock）") } label: { Text("編輯").foregroundStyle(PT.orange) }
         )) {
-            PRow(label: "🕐", value: "11月\(ev.day)日（週\(weekday)）\(ev.time)")
+            PRow(icon: "clock", label: "", value: "11月\(ev.day)日（週\(weekday)）\(ev.time)")
             HStack {
-                Text("🏷 標籤")
+                Label("標籤", systemImage: "tag")
                 Spacer()
                 Circle().fill(ev.color).frame(width: 10, height: 10)
                 Text("Bright Orange").font(.subheadline).foregroundStyle(PT.soft)
             }
             .padding(.vertical, 12)
             .overlay(Divider().opacity(0.6), alignment: .bottom)
-            if !ev.loc.isEmpty { PRow(label: "📍 地點", value: ev.loc) }
-            if ev.attach > 0 { PRow(label: "📎 附件", value: "\(ev.attach) 個") { s.upsell = true } }
-            PRow(label: "👥 成員", value: "全部成員")
+            if !ev.loc.isEmpty { PRow(icon: "mappin", label: "地點", value: ev.loc) }
+            if ev.attach > 0 { PRow(icon: "paperclip", label: "附件", value: "\(ev.attach) 個") { s.upsell = true } }
+            PRow(icon: "person.2", label: "成員", value: "全部成員")
             ChatBox(msgs: [("老婆", "買緊嘢食，要乜？", false), ("我", "沙茶醬幫手攞支", true)])
             Button { s.note("已刪除（mock）"); s.screen = .month } label: {
                 Text("刪除活動").bold().foregroundStyle(.red)
@@ -194,17 +194,17 @@ struct ProtoLiveEventDetail: View {
         PSheet(title: ev.title, onBack: { s.screen = .month }, right: AnyView(
             Button { s.screen = .editEvent(ev) } label: { Text("編輯").foregroundStyle(PT.orange) }
         )) {
-            PRow(label: "🕐", value: startText)
+            PRow(icon: "clock", label: "", value: startText)
             HStack {
-                Text("🏷 標籤")
+                Label("標籤", systemImage: "tag")
                 Spacer()
                 Text(ev.labelColor ?? "bright-orange").font(.subheadline).foregroundStyle(PT.soft)
             }
             .padding(.vertical, 12)
             .overlay(Divider().opacity(0.6), alignment: .bottom)
-            if let loc = ev.location, !loc.isEmpty { PRow(label: "📍 地點", value: loc) }
-            if ev.repeatRule != "none" { PRow(label: "🔁 重複", value: ev.repeatRule) }
-            if let note = ev.note, !note.isEmpty { PRow(label: "🗒 備註", value: note) }
+            if let loc = ev.location, !loc.isEmpty { PRow(icon: "mappin", label: "地點", value: loc) }
+            if ev.repeatRule != "none" { PRow(icon: "repeat", label: "重複", value: ev.repeatRule) }
+            if let note = ev.note, !note.isEmpty { PRow(icon: "note.text", label: "備註", value: note) }
             LiveAttachments(eventId: ev.id)
             LiveChat(eventId: ev.id)
             Button {
@@ -227,7 +227,7 @@ struct LiveAttachments: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("📎 附件").font(.caption).foregroundStyle(PT.soft)
+            Label("附件", systemImage: "paperclip").font(.caption).foregroundStyle(PT.soft)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(attachments) { a in

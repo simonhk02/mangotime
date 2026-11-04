@@ -472,7 +472,7 @@ struct PremiumUpsell: View {
         ZStack {
             Color.black.opacity(0.4).ignoresSafeArea().onTapGesture { s.upsell = false }
             VStack(spacing: 12) {
-                Text("📎").font(.system(size: 40))
+                Image(systemName: "paperclip").font(.system(size: 34)).foregroundStyle(PT.soft)
                 Text("使用 MangoTime 高級版上傳文件").font(.headline)
                 Text("並隨時確認").font(.subheadline).foregroundStyle(PT.soft)
                 Text("您有這樣的煩惱嗎？\n孩子學校的通知書、活動嘅 PDF…").font(.footnote).foregroundStyle(PT.soft).multilineTextAlignment(.center)

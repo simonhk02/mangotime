@@ -9,7 +9,7 @@ struct ProtoHelpHome: View {
             ForEach(Mock.helpCats) { c in
                 Button { s.screen = .helpCategory(c) } label: {
                     HStack(spacing: 12) {
-                        Text(c.icon)
+                        Image(systemName: c.icon).foregroundStyle(PT.orange)
                         Text(c.name).foregroundStyle(.primary)
                         Spacer()
                         Image(systemName: "chevron.right").font(.caption).foregroundStyle(PT.soft)
@@ -135,14 +135,14 @@ struct ProtoUserGuide: View {
             Text("MangoTime User Stories").font(.title3).bold().padding(.top, 12)
             Text("Browse 樹民們點樣用共享行事曆：").font(.caption).foregroundStyle(PT.soft)
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 6)
-            storyRow(emoji: "👨‍👩‍👧", title: "一家人嘅行程表", sub: "家庭 · 3 位成員")
-            storyRow(emoji: "🏢", title: "小公司嘅班表", sub: "工作 · 8 位成員")
-            storyRow(emoji: "🎾", title: "波友嘅訂場曆", sub: "興趣 · 12 位成員")
+            storyRow(icon: "photo", title: "一家人嘅行程表", sub: "家庭 · 3 位成員")
+            storyRow(icon: "photo", title: "小公司嘅班表", sub: "工作 · 8 位成員")
+            storyRow(icon: "tennis.racket", title: "波友嘅訂場曆", sub: "興趣 · 12 位成員")
         }
     }
-    private func storyRow(emoji: String, title: String, sub: String) -> some View {
+    private func storyRow(icon: String, title: String, sub: String) -> some View {
         HStack(spacing: 12) {
-            Text(emoji).font(.title2)
+            Image(systemName: icon).font(.title2).foregroundStyle(PT.soft)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).bold()
                 Text(sub).font(.caption).foregroundStyle(PT.soft)

@@ -69,22 +69,22 @@ enum Mock {
         .init(id: "u2", name: "老婆", role: "成員", color: PT.green),
         .init(id: "u3", name: "阿女", role: "成員", color: PT.blue),
     ]
-    static let photos = ["🍲","🏖","🎾","🎂","🐱","🌊","🍜","🎁","🏸"]
+    static let photos = ["fork.knife","beach.umbrella","tennis.racket","birthday.cake","pawprint","water.waves","fork.knife.circle","gift","figure.badminton"]
     static let labels: [(String, Color)] = [
         ("Bright Orange", PT.orange), ("Emerald Green", PT.green),
         ("Blue", PT.blue), ("Red", PT.red), ("Purple", PT.purple),
     ]
     static let helpCats: [HelpCat] = [
-        .init(id: "c1", icon: "🌱", name: "給初次使用者", arts: ["想知道共享日曆的各功能（應用程序版）","行程未被共享","希望定期收到通知"]),
-        .init(id: "c2", icon: "👤", name: "帳戶管理", arts: ["想要註冊帳號","因變更機型而希望繼承數據","登入帳戶並使用現有資料","想要從所有裝置登出","我要刪除帳號／退出服務"]),
-        .init(id: "c3", icon: "📝", name: "創建/編輯事件", arts: ["想從圖片建立行程（掃描圖片）","複製/刪除/編輯計劃","輕鬆登錄行程","每週〇曜日的行程登錄方法（重複設定）"]),
-        .init(id: "c4", icon: "📅", name: "關於日曆", arts: ["希望以時間單位顯示預定（垂直顯示）","希望減少通知頻率（每天一次彙總通知）","我想更改顏色"]),
-        .init(id: "c5", icon: "⚙️", name: "各種應用程序設置", arts: ["通知不到","我想更改語言","想了解通知的種類與頻率","希望自動輸入標題"]),
-        .init(id: "c6", icon: "🛠", name: "實際使用", arts: ["想要新增或刪除相簿中的照片","搜尋行程","我要登錄或查看備忘錄"]),
-        .init(id: "c7", icon: "🔗", name: "將MangoTime與其他日曆一起使用", arts: ["想使用其他日曆（例如 Google 日曆）"]),
-        .init(id: "c8", icon: "🩹", name: "解決問題", arts: ["小工具未顯示行程","顯示錯誤","行事消失","無法查看"]),
-        .init(id: "c9", icon: "💬", name: "其他話題", arts: ["關於聯絡客服的方法","關於支援版本（OS/應用程式）"]),
-        .init(id: "c10", icon: "🌍", name: "關於公開行事曆［管理員］", arts: ["［管理者］取得公開行事曆中活動的二維碼並刊載於印刷品"]),
+        .init(id: "c1", icon: "leaf", name: "給初次使用者", arts: ["想知道共享日曆的各功能（應用程序版）","行程未被共享","希望定期收到通知"]),
+        .init(id: "c2", icon: "person.circle", name: "帳戶管理", arts: ["想要註冊帳號","因變更機型而希望繼承數據","登入帳戶並使用現有資料","想要從所有裝置登出","我要刪除帳號／退出服務"]),
+        .init(id: "c3", icon: "square.and.pencil", name: "創建/編輯事件", arts: ["想從圖片建立行程（掃描圖片）","複製/刪除/編輯計劃","輕鬆登錄行程","每週〇曜日的行程登錄方法（重複設定）"]),
+        .init(id: "c4", icon: "calendar", name: "關於日曆", arts: ["希望以時間單位顯示預定（垂直顯示）","希望減少通知頻率（每天一次彙總通知）","我想更改顏色"]),
+        .init(id: "c5", icon: "gearshape", name: "各種應用程序設置", arts: ["通知不到","我想更改語言","想了解通知的種類與頻率","希望自動輸入標題"]),
+        .init(id: "c6", icon: "wrench.and.screwdriver", name: "實際使用", arts: ["想要新增或刪除相簿中的照片","搜尋行程","我要登錄或查看備忘錄"]),
+        .init(id: "c7", icon: "link", name: "將MangoTime與其他日曆一起使用", arts: ["想使用其他日曆（例如 Google 日曆）"]),
+        .init(id: "c8", icon: "bandage", name: "解決問題", arts: ["小工具未顯示行程","顯示錯誤","行事消失","無法查看"]),
+        .init(id: "c9", icon: "bubble", name: "其他話題", arts: ["關於聯絡客服的方法","關於支援版本（OS/應用程式）"]),
+        .init(id: "c10", icon: "globe", name: "關於公開行事曆［管理員］", arts: ["［管理者］取得公開行事曆中活動的二維碼並刊載於印刷品"]),
     ]
     static let articleBody: [String: [String]] = [
         "小工具未顯示行程": ["請確認以下內容","iOS / Android：確認行事曆已開啟同步","確認小工具揀咗正確行事曆","重新開機後再試"],

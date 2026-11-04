@@ -45,7 +45,7 @@ struct ProtoFeed: View {
             ScrollView {
                 if s.feedTab == 0 {
                     if liveItems.isEmpty {
-                        EmptyState(icon: "📰", title: "無最新動態", sub: "呢個行事曆仲未有更新。")
+                        EmptyState(icon: "newspaper", title: "無最新動態", sub: "呢個行事曆仲未有更新。")
                     }
                     ForEach(liveItems) { item in
                         HStack(spacing: 10) {
@@ -67,7 +67,7 @@ struct ProtoFeed: View {
                 } else {
                     if livePhotos.isEmpty {
                         VStack(spacing: 10) {
-                            EmptyState(icon: "🖼", title: "無最新動態", sub: "呢個行事曆仲未有相簿更新。")
+                            EmptyState(icon: "photo.on.rectangle", title: "無最新動態", sub: "呢個行事曆仲未有相簿更新。")
                             Button { s.screen = .album } label: {
                                 Text("去相簿 ›").foregroundStyle(PT.orange)
                             }
@@ -131,7 +131,7 @@ struct ProtoFeed: View {
                     VStack(spacing: 0) {
                         Button { s.screen = .eventDetail(Mock.events[0]) } label: {
                             VStack(alignment: .leading, spacing: 0) {
-                                Text("🍖").font(.system(size: 60))
+                                Image(systemName: "photo").font(.system(size: 44)).foregroundStyle(PT.soft)
                                     .frame(maxWidth: .infinity).frame(height: 110)
                                     .background(Color(.secondarySystemBackground))
                                 VStack(alignment: .leading, spacing: 4) {
@@ -156,7 +156,7 @@ struct ProtoFeed: View {
                     }
                 } else {
                     VStack(spacing: 10) {
-                        EmptyState(icon: "🖼", title: "無最新動態", sub: "呢個行事曆仲未有相簿更新。")
+                        EmptyState(icon: "photo.on.rectangle", title: "無最新動態", sub: "呢個行事曆仲未有相簿更新。")
                         Button { s.screen = .album } label: {
                             Text("去相簿 ›").foregroundStyle(PT.orange)
                         }
@@ -192,7 +192,7 @@ struct ProtoNotices: View {
             PNavBar("通知")
             ScrollView {
                 if liveNotices.isEmpty {
-                    EmptyState(icon: "🔔", title: "冇通知", sub: "其他成員郁手就會喺度見到。")
+                    EmptyState(icon: "bell", title: "冇通知", sub: "其他成員郁手就會喺度見到。")
                 }
                 ForEach(liveNotices) { n in
                     HStack(spacing: 10) {
@@ -223,14 +223,14 @@ struct ProtoNotices: View {
         VStack(spacing: 0) {
             PNavBar("通知")
             ScrollView {
-                noticeRow(icon: "🔔", text: "聽日 19:00「屋企人飯局」", sub: "提醒")
-                noticeRow(icon: "👥", text: "阿女接受咗你嘅邀請", sub: "昨日")
+                noticeRow(icon: "bell", text: "聽日 19:00「屋企人飯局」", sub: "提醒")
+                noticeRow(icon: "person.2", text: "阿女接受咗你嘅邀請", sub: "昨日")
             }
         }
     }
     private func noticeRow(icon: String, text: String, sub: String) -> some View {
         HStack(spacing: 10) {
-            Text(icon).font(.title3)
+            Image(systemName: icon).font(.title3).foregroundStyle(PT.soft)
             VStack(alignment: .leading, spacing: 2) {
                 Text(text).font(.subheadline)
                 Text(sub).font(.caption).foregroundStyle(PT.soft)
@@ -265,7 +265,7 @@ struct ProtoOther: View {
                     .buttonStyle(.plain)
                     Button { s.screen = .premiumDetail } label: {
                         HStack {
-                            Text("⭐ MangoTime Premium").bold()
+                            Label("MangoTime Premium", systemImage: "star.fill").bold().foregroundStyle(PT.orange)
                             Spacer()
                             Text("開始月付HK$23.00的無廣告方案！免費使用1月 ›").font(.caption).foregroundStyle(PT.soft).lineLimit(1)
                         }
@@ -275,15 +275,15 @@ struct ProtoOther: View {
                     }
                     .buttonStyle(.plain)
                     .padding(.bottom, 8)
-                    PRow(label: "📅 行事曆清單") { s.screen = .calendarList }
-                    PRow(label: "📝 備忘錄") { s.screen = .memos }
-                    PRow(label: "✅ 待辦清單") { s.screen = .todos }
-                    PRow(label: "🖼 相簿") { s.screen = .album }
-                    PRow(label: "👥 成員") { s.screen = .members }
-                    PRow(label: "⚙️ App 設定") { s.screen = .settings }
-                    PRow(label: "📢 公告") { s.screen = .noticeBoard }
-                    PRow(label: "📖 樹民的使用手冊") { s.screen = .userGuide }
-                    PRow(label: "❓ 使用方法") { s.screen = .helpHome }
+                    PRow(icon: "calendar", label: "行事曆清單") { s.screen = .calendarList }
+                    PRow(icon: "doc.text", label: "備忘錄") { s.screen = .memos }
+                    PRow(icon: "checkmark.square", label: "待辦清單") { s.screen = .todos }
+                    PRow(icon: "photo.on.rectangle", label: "相簿") { s.screen = .album }
+                    PRow(icon: "person.2", label: "成員") { s.screen = .members }
+                    PRow(icon: "gearshape", label: "App 設定") { s.screen = .settings }
+                    PRow(icon: "megaphone", label: "公告") { s.screen = .noticeBoard }
+                    PRow(icon: "book", label: "MangoTime 使用手冊") { s.screen = .userGuide }
+                    PRow(icon: "questionmark.circle", label: "使用方法") { s.screen = .helpHome }
                 }
                 .padding(.horizontal, 16)
             }
@@ -352,7 +352,7 @@ struct ProtoMemos: View {
                             if !m.body.isEmpty { Text(m.body).font(.caption).foregroundStyle(PT.soft).lineLimit(1) }
                         }
                         Spacer()
-                        if let c = m.commentCount, c > 0 { Text("💬\(c)").font(.caption).foregroundStyle(PT.soft) }
+                        if let c = m.commentCount, c > 0 { HStack(spacing: 2) { Image(systemName: "bubble"); Text("\(c)") }.font(.caption).foregroundStyle(PT.soft) }
                         Image(systemName: "chevron.right").font(.caption).foregroundStyle(PT.soft)
                     }
                     .padding(.vertical, 12)
@@ -361,7 +361,7 @@ struct ProtoMemos: View {
                 .buttonStyle(.plain)
             }
             if liveMemos.isEmpty {
-                EmptyState(icon: "📝", title: "找不到備忘錄。", sub: "請透過下方建立新的備忘錄。")
+                EmptyState(icon: "doc.text", title: "找不到備忘錄。", sub: "請透過下方建立新的備忘錄。")
             }
         }, bottom: {
             HStack {
@@ -419,7 +419,7 @@ struct ProtoMemosEmpty: View {
     @EnvironmentObject var s: ProtoState
     var body: some View {
         PSheet(title: "備忘錄", onBack: { s.screen = .memos }) {
-            EmptyState(icon: "📝", title: "找不到備忘錄。", sub: "請透過下方的［+］按鈕建立新的備忘錄。")
+            EmptyState(icon: "doc.text", title: "找不到備忘錄。", sub: "請透過下方的［+］按鈕建立新的備忘錄。")
             Button { s.note("新增備忘錄（mock）") } label: {
                 Text("新增備忘錄").bold().foregroundStyle(.white)
                     .frame(maxWidth: .infinity).padding(.vertical, 12)
@@ -488,14 +488,14 @@ struct ProtoMemoDetail: View {
             Button { s.note("編輯（mock）") } label: { Text("編輯").foregroundStyle(PT.orange) }
         )) {
             HStack {
-                Text("🏷 標籤")
+                Label("標籤", systemImage: "tag")
                 Spacer()
                 Circle().fill(memo.color).frame(width: 10, height: 10)
                 Text("備忘錄").font(.subheadline).foregroundStyle(PT.soft)
             }
             .padding(.vertical, 12)
             .overlay(Divider().opacity(0.6), alignment: .bottom)
-            PRow(label: "🗒 內容", value: memo.body)
+            PRow(icon: "note.text", label: "內容", value: memo.body)
             ChatBox(msgs: [("阿女", "貓糧要無穀物嗰隻吖", false)])
         }
     }
@@ -576,7 +576,7 @@ struct ProtoTodos: View {
                 }
             }
             if liveLists.isEmpty {
-                EmptyState(icon: "✅", title: "找不到待辦清單。", sub: "請透過下方建立新的清單。")
+                EmptyState(icon: "checkmark.square", title: "找不到待辦清單。", sub: "請透過下方建立新的清單。")
             }
         }, bottom: {
             HStack {
@@ -680,7 +680,7 @@ struct ProtoAlbum: View {
             }
         ), onRefresh: { await reload() }) {
             if livePhotos.isEmpty {
-                EmptyState(icon: "🖼", title: "仲未有相。", sub: "撳右上 ＋ 上傳第一張。")
+                EmptyState(icon: "photo.on.rectangle", title: "仲未有相。", sub: "撳右上 ＋ 上傳第一張。")
             }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
                 ForEach(livePhotos) { p in
@@ -717,7 +717,7 @@ struct ProtoAlbum: View {
         )) {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
                 ForEach(Mock.photos, id: \.self) { p in
-                    Text(p).font(.system(size: 40))
+                    Image(systemName: p).font(.system(size: 26)).foregroundStyle(PT.soft)
                         .frame(maxWidth: .infinity).aspectRatio(1, contentMode: .fit)
                         .background(Color(.secondarySystemBackground))
                         .clipShape(RoundedRectangle(cornerRadius: 10))
@@ -820,7 +820,7 @@ struct ProtoInvite: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, 12)
             Divider().padding(.vertical, 10)
-            Text("🌐 公開唯讀連結（唔使 app 都睇到月曆）").font(.caption).foregroundStyle(PT.soft)
+            Label("公開唯讀連結（唔使 app 都睇到月曆）", systemImage: "globe").font(.caption).foregroundStyle(PT.soft)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Button {
                 Task {

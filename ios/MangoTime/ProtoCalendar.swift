@@ -51,7 +51,7 @@ struct ProtoMonthScreen: View {
             })
             Button { s.screen = .premiumDetail } label: {
                 HStack {
-                    Text("⭐ MangoTime Premium").font(.caption).bold()
+                    Label("MangoTime Premium", systemImage: "star.fill").font(.caption).bold()
                     Spacer()
                     Text("無廣告・上傳檔案 ›").font(.caption).foregroundStyle(PT.soft)
                 }
@@ -156,7 +156,7 @@ struct ProtoMonthScreen: View {
                                 }
                             }
                             ForEach(evs.prefix(2)) { ev in
-                                Text(ev.title + (ev.attach > 0 ? " 📎\(ev.attach)" : ""))
+                                Text(ev.title)
                                     .font(.system(size: 8))
                                     .lineLimit(1)
                                     .padding(.horizontal, 3).padding(.vertical, 1)
@@ -356,8 +356,8 @@ struct ProtoCalendarList: View {
             }
             .pickerStyle(.segmented)
             VStack(spacing: 0) {
-                calCard(name: "家庭日曆", sub: "行事曆（5）· 👥 3", color: PT.orange, active: true)
-                calCard(name: "工作", sub: "行事曆（2）· 👥 2", color: PT.blue, active: false)
+                calCard(name: "家庭日曆", sub: "行事曆（5）· 3 位成員", color: PT.orange, active: true)
+                calCard(name: "工作", sub: "行事曆（2）· 2 位成員", color: PT.blue, active: false)
                 calCard(name: "香港公眾假期", sub: "公開 · 訂閱中", color: PT.green, active: false)
             }
             .padding(.top, 8)

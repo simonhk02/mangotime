@@ -23,11 +23,11 @@ struct ProtoSettings: View {
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 4)
             PRow(label: "語言", value: "中文") { s.note("語言（mock）") }
             PRow(label: "節日", value: "香港") { s.note("節日（mock）") }
-            PRow(label: "🖥 顯示設定") { s.screen = .displaySettings }
-            PRow(label: "🔍 篩選設定") { s.screen = .filterSettings }
+            PRow(icon: "display", label: "顯示設定") { s.screen = .displaySettings }
+            PRow(icon: "line.3.horizontal.decrease", label: "篩選設定") { s.screen = .filterSettings }
             Text("通知").font(.caption).foregroundStyle(PT.soft)
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 14)
-            PRow(label: "🔔 通知設定") { s.screen = .notifSettings }
+            PRow(icon: "bell", label: "通知設定") { s.screen = .notifSettings }
             Text("今日行程").font(.caption).foregroundStyle(PT.soft)
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 14)
             PRow(label: "無行程的日子也通知", toggle: .constant(false))
@@ -40,16 +40,16 @@ struct ProtoSettings: View {
         Group {
             Text("幫助").font(.caption).foregroundStyle(PT.soft)
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 4)
-            PRow(label: "📢 公告") { s.screen = .noticeBoard }
-            PRow(label: "📖 樹民的使用手冊") { s.screen = .userGuide }
-            PRow(label: "❓ 使用方法") { s.screen = .helpHome }
-            PRow(label: "🙋 常見問題") { s.screen = .faq }
-            PRow(label: "✉️ 詢問") { s.screen = .contact }
+            PRow(icon: "megaphone", label: "公告") { s.screen = .noticeBoard }
+            PRow(icon: "book", label: "MangoTime 使用手冊") { s.screen = .userGuide }
+            PRow(icon: "questionmark.circle", label: "使用方法") { s.screen = .helpHome }
+            PRow(icon: "person.raised.hand", label: "常見問題") { s.screen = .faq }
+            PRow(icon: "envelope", label: "詢問") { s.screen = .contact }
             Text("社群").font(.caption).foregroundStyle(PT.soft)
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 14)
-            PRow(label: "🌐 官方網站") { s.note("網站（mock）") }
-            PRow(label: "🐦 X / Twitter") { s.note("X（mock）") }
-            PRow(label: "⭐ 喺 App Store 評分") { s.note("評分（mock）") }
+            PRow(icon: "globe", label: "官方網站") { s.note("網站（mock）") }
+            PRow(icon: "at", label: "X / Twitter") { s.note("X（mock）") }
+            PRow(icon: "star", label: "喺 App Store 評分") { s.note("評分（mock）") }
         }
     }
 }
@@ -90,8 +90,8 @@ struct ProtoFilterSettings: View {
         PSheet(title: "篩選設定", onBack: { s.screen = .settings }) {
             Text("指定行程參加者或標籤，即可篩選。").font(.caption).foregroundStyle(PT.soft)
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 8)
-            PRow(label: "👥 參加者", value: "全部") { s.note("揀參加者（mock）") }
-            PRow(label: "🏷 標籤", value: "全部") { s.note("揀標籤（mock）") }
+            PRow(icon: "person.2", label: "參加者", value: "全部") { s.note("揀參加者（mock）") }
+            PRow(icon: "tag", label: "標籤", value: "全部") { s.note("揀標籤（mock）") }
             Button { s.note("已套用（mock）"); s.screen = .settings } label: {
                 Text("套用").bold().foregroundStyle(.white)
                     .frame(maxWidth: .infinity).padding(.vertical, 12)
@@ -130,7 +130,7 @@ struct ProtoNoticeBoard: View {
             }
             .buttonStyle(.plain)
             VStack(alignment: .leading, spacing: 4) {
-                Text("v1.0 上線 🎉").bold()
+                Text("v1.0 上線").bold()
                 Text("MangoTime 正式推出！而家有 MCP、Webhook、API。").font(.caption).foregroundStyle(PT.soft)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -171,10 +171,10 @@ struct ProtoPremium: View {
     var body: some View {
         PSheet(title: "MangoTime Premium", onBack: { s.screen = .other }) {
             VStack(spacing: 12) {
-                Text("⭐").font(.system(size: 48))
+                Image(systemName: "star.fill").font(.system(size: 40)).foregroundStyle(PT.orange)
                 Text("月付 HK$23.00").font(.title3).bold()
                 Text("無廣告 · 上傳檔案 · 更多標籤色").font(.subheadline).foregroundStyle(PT.soft)
-                Button { s.note("收費唔係而家嘅事 😄") } label: {
+                Button { s.note("收費唔係而家嘅事") } label: {
                     Text("免費使用 1 個月").bold().foregroundStyle(.white)
                         .frame(maxWidth: .infinity).padding(.vertical, 13)
                         .background(PT.orange).clipShape(RoundedRectangle(cornerRadius: 10))
@@ -190,11 +190,11 @@ struct ProtoPremiumDetail: View {
     var body: some View {
         PSheet(title: "MangoTime Premium", onBack: { s.screen = .month }) {
             Text("什麽是 MangoTime Premium？").font(.title3).bold().padding(.top, 12)
-            premiumRow(icon: "🚫", title: "無廣告", sub: "移除所有廣告，介面更乾淨")
-            premiumRow(icon: "📎", title: "上傳檔案", sub: "活動同備忘錄可以附加 PDF、文件")
-            premiumRow(icon: "🏷", title: "更多標籤色", sub: "解鎖全部標籤顏色")
-            premiumRow(icon: "🖼", title: "更大相簿", sub: "相簿容量無上限")
-            Button { s.note("收費唔係而家嘅事 😄") } label: {
+            premiumRow(icon: "nosign", title: "無廣告", sub: "移除所有廣告，介面更乾淨")
+            premiumRow(icon: "paperclip", title: "上傳檔案", sub: "活動同備忘錄可以附加 PDF、文件")
+            premiumRow(icon: "tag", title: "更多標籤色", sub: "解鎖全部標籤顏色")
+            premiumRow(icon: "photo.on.rectangle", title: "更大相簿", sub: "相簿容量無上限")
+            Button { s.note("收費唔係而家嘅事") } label: {
                 Text("開始月付 HK$23.00").bold().foregroundStyle(.white)
                     .frame(maxWidth: .infinity).padding(.vertical, 13)
                     .background(PT.orange).clipShape(RoundedRectangle(cornerRadius: 10))
@@ -206,7 +206,7 @@ struct ProtoPremiumDetail: View {
     }
     private func premiumRow(icon: String, title: String, sub: String) -> some View {
         HStack(spacing: 12) {
-            Text(icon).font(.title2)
+            Image(systemName: icon).font(.title2).foregroundStyle(PT.orange)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).bold()
                 Text(sub).font(.caption).foregroundStyle(PT.soft)
