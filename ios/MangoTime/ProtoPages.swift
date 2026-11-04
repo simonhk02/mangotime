@@ -4,7 +4,91 @@ import UniformTypeIdentifiers
 
 struct ProtoFeed: View {
     @EnvironmentObject var s: ProtoState
+    @State private var liveItems: [MTActivity] = []
+    @State private var livePhotos: [MTPhoto] = []
+
     var body: some View {
+        if s.api != nil { liveFeed } else { mockFeed }
+    }
+
+    private func reload() async {
+        guard let calId = s.activeCalendarId else { return }
+        if s.feedTab == 0 {
+            liveItems = (try? await s.api?.listActivity(calendarId: calId)) ?? []
+        } else {
+            livePhotos = (try? await s.api?.listPhotos(calendarId: calId)) ?? []
+        }
+    }
+
+    private func relTime(_ iso: String) -> String {
+        guard let d = parseISODate(iso) else { return "" }
+        let diff = Date().timeIntervalSince(d)
+        if diff < 60 { return "啱啱" }
+        if diff < 3600 { return "\(Int(diff/60)) 分鐘前" }
+        if diff < 86400 { return "\(Int(diff/3600)) 小時前" }
+        return "\(Int(diff/86400)) 日前"
+    }
+
+    private var liveFeed: some View {
+        VStack(spacing: 0) {
+            PNavBar("最新動態", left: {
+                Button { s.screen = .calendarList } label: {
+                    Text("\(s.liveCalendars.first(where: { $0.id == s.activeCalendarId })?.name ?? "行事曆") ▾").font(.subheadline).foregroundStyle(PT.orange)
+                }
+            })
+            Picker("", selection: $s.feedTab) {
+                Text("行程").tag(0); Text("相簿").tag(1)
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 14).padding(.vertical, 6)
+            .onChange(of: s.feedTab) { _, _ in Task { await reload() } }
+            ScrollView {
+                if s.feedTab == 0 {
+                    if liveItems.isEmpty {
+                        EmptyState(icon: "📰", title: "無最新動態", sub: "呢個行事曆仲未有更新。")
+                    }
+                    ForEach(liveItems) { item in
+                        HStack(spacing: 10) {
+                            Text(item.icon).font(.title3)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("\(item.actorName) \(item.text)").font(.subheadline)
+                                Text(relTime(item.createdAt)).font(.caption).foregroundStyle(PT.soft)
+                            }
+                            Spacer()
+                        }
+                        .padding(.horizontal, 14).padding(.vertical, 10)
+                        .overlay(Divider().opacity(0.5), alignment: .bottom)
+                    }
+                } else {
+                    if livePhotos.isEmpty {
+                        VStack(spacing: 10) {
+                            EmptyState(icon: "🖼", title: "無最新動態", sub: "呢個行事曆仲未有相簿更新。")
+                            Button { s.screen = .album } label: {
+                                Text("去相簿 ›").foregroundStyle(PT.orange)
+                            }
+                        }
+                    } else {
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
+                            ForEach(livePhotos) { p in
+                                AsyncImage(url: s.api?.fileURL(p.url)) { phase in
+                                    switch phase {
+                                    case .success(let img): img.resizable().scaledToFill()
+                                    default: Color(.secondarySystemBackground)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity).aspectRatio(1, contentMode: .fit)
+                                .clipped().clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
+                        }
+                        .padding(.horizontal, 10).padding(.top, 8)
+                    }
+                }
+            }
+        }
+        .onAppear { Task { await reload() } }
+    }
+
+    private var mockFeed: some View {
         VStack(spacing: 0) {
             PNavBar("最新動態", left: {
                 Button { s.screen = .calendarList } label: {

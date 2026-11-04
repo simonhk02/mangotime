@@ -95,7 +95,7 @@ export function registerEventRoutes(app: FastifyInstance, prisma: PrismaClient) 
     const event = await prisma.event.create({
       data: { ...(data as object), calendarId, creatorId: user.id } as never,
     });
-    await emitEvent(prisma, "event.created", event.id, { event: publicEvent(event), actorId: user.id });
+    await emitEvent(prisma, "event.created", event.calendarId, { event: publicEvent(event), actorId: user.id });
     return reply.code(201).send({ event: publicEvent(event) });
   });
 
@@ -136,7 +136,7 @@ export function registerEventRoutes(app: FastifyInstance, prisma: PrismaClient) 
     const endsAt = ("endsAt" in data ? (data.endsAt as Date | null) : existing.endsAt) ?? null;
     if (endsAt && endsAt < startsAt) return reply.code(400).send({ error: "endsAt must be after startsAt" });
     const event = await prisma.event.update({ where: { id }, data });
-    await emitEvent(prisma, "event.updated", id, { event: publicEvent(event), actorId: user.id });
+    await emitEvent(prisma, "event.updated", existing.calendarId, { event: publicEvent(event), actorId: user.id });
     return { event: publicEvent(event) };
   });
 
@@ -154,7 +154,7 @@ export function registerEventRoutes(app: FastifyInstance, prisma: PrismaClient) 
       return reply.code(403).send({ error: "only the event creator or calendar creator can delete" });
     }
     await prisma.event.delete({ where: { id } });
-    await emitEvent(prisma, "event.deleted", id, { eventId: id, calendarId: existing.calendarId, actorId: user.id });
+    await emitEvent(prisma, "event.deleted", existing.calendarId, { eventId: id, actorId: user.id });
     return reply.code(204).send();
   });
 }

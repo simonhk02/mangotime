@@ -367,6 +367,26 @@ extension APIClient {
     func fileURL(_ path: String) -> URL? { URL(string: baseURL + path) }
 }
 
+// MARK: - Activity (task 2.5)
+
+struct MTActivity: Codable, Identifiable, Hashable {
+    let id: String
+    let type: String
+    let icon: String
+    let text: String
+    let actorId: String?
+    let actorName: String
+    let createdAt: String
+}
+struct MTActivityWrap: Codable { let items: [MTActivity] }
+
+extension APIClient {
+    func listActivity(calendarId: String) async throws -> [MTActivity] {
+        let res: MTActivityWrap = try await request("GET", "/v1/calendars/\(calendarId)/activity")
+        return res.items
+    }
+}
+
 func parseISODate(_ s: String) -> Date? {
     let f = ISO8601DateFormatter()
     f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
