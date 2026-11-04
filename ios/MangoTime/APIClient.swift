@@ -244,6 +244,46 @@ extension APIClient {
     }
 }
 
+// MARK: - Memos (task 2.2)
+
+struct MTMemo: Codable, Identifiable, Hashable {
+    let id: String
+    let calendarId: String
+    let title: String
+    let body: String
+    let labelColor: String?
+    let creatorId: String
+    let updatedAt: String
+    let commentCount: Int?
+}
+struct MTMemoWrap: Codable { let memo: MTMemo }
+struct MTMemoList: Codable { let memos: [MTMemo] }
+
+extension APIClient {
+    func listMemos(calendarId: String) async throws -> [MTMemo] {
+        let res: MTMemoList = try await request("GET", "/v1/calendars/\(calendarId)/memos")
+        return res.memos
+    }
+    func createMemo(calendarId: String, title: String, body: String) async throws -> MTMemo {
+        struct Payload: Encodable { let title, body: String }
+        let res: MTMemoWrap = try await request("POST", "/v1/calendars/\(calendarId)/memos", body: Payload(title: title, body: body))
+        return res.memo
+    }
+    func deleteMemo(id: String) async throws {
+        struct Empty: Encodable {}
+        let _: EmptyResponse = try await request("DELETE", "/v1/memos/\(id)", body: Optional<Empty>.none)
+    }
+    func listMemoComments(memoId: String) async throws -> [MTComment] {
+        let res: MTCommentList = try await request("GET", "/v1/memos/\(memoId)/comments")
+        return res.comments
+    }
+    func postMemoComment(memoId: String, body: String) async throws -> MTComment {
+        struct Payload: Encodable { let body: String }
+        let res: MTCommentWrap = try await request("POST", "/v1/memos/\(memoId)/comments", body: Payload(body: body))
+        return res.comment
+    }
+}
+
 func parseISODate(_ s: String) -> Date? {
     let f = ISO8601DateFormatter()
     f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]

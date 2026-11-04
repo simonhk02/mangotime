@@ -180,7 +180,64 @@ struct ProtoProfile: View {
 
 struct ProtoMemos: View {
     @EnvironmentObject var s: ProtoState
+    @State private var liveMemos: [MTMemo] = []
+    @State private var newTitle = ""
     var body: some View {
+        if s.api != nil { liveList } else { mockList }
+    }
+
+    private func reload() async {
+        guard let calId = s.activeCalendarId else { return }
+        liveMemos = (try? await s.api?.listMemos(calendarId: calId)) ?? []
+    }
+
+    private var liveList: some View {
+        PSheet(title: "備忘錄", onBack: { s.screen = .other }) {
+            ForEach(liveMemos) { m in
+                Button { s.screen = .liveMemoDetail(m) } label: {
+                    HStack(spacing: 10) {
+                        Circle().fill(m.labelColor == "emerald" ? PT.green : m.labelColor == "blue" ? PT.blue : PT.orange).frame(width: 10, height: 10)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(m.title).bold().foregroundStyle(.primary)
+                            if !m.body.isEmpty { Text(m.body).font(.caption).foregroundStyle(PT.soft).lineLimit(1) }
+                        }
+                        Spacer()
+                        if let c = m.commentCount, c > 0 { Text("💬\(c)").font(.caption).foregroundStyle(PT.soft) }
+                        Image(systemName: "chevron.right").font(.caption).foregroundStyle(PT.soft)
+                    }
+                    .padding(.vertical, 12)
+                    .overlay(Divider().opacity(0.5), alignment: .bottom)
+                }
+                .buttonStyle(.plain)
+            }
+            if liveMemos.isEmpty {
+                EmptyState(icon: "📝", title: "找不到備忘錄。", sub: "請透過下方建立新的備忘錄。")
+            }
+            HStack {
+                TextField("新備忘錄標題", text: $newTitle).textFieldStyle(.roundedBorder)
+                    .accessibilityIdentifier("memo_new_title")
+                Button {
+                    let t = newTitle.trimmingCharacters(in: .whitespaces)
+                    guard let calId = s.activeCalendarId, !t.isEmpty else { return }
+                    hideKeyboard()
+                    newTitle = ""
+                    Task {
+                        _ = try? await s.api?.createMemo(calendarId: calId, title: t, body: "")
+                        await reload()
+                        s.note("已建立 ✓")
+                    }
+                } label: {
+                    Text("建立").bold().foregroundStyle(.white)
+                        .padding(.horizontal, 14).padding(.vertical, 8)
+                        .background(PT.orange).clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+            }
+            .padding(.top, 12)
+        }
+        .onAppear { Task { await reload() } }
+    }
+
+    private var mockList: some View {
         PSheet(title: "備忘錄", onBack: { s.screen = .other }, right: AnyView(
             Button { s.note("新增備忘錄（mock）") } label: { Text("＋").foregroundStyle(PT.orange) }
         )) {
@@ -220,6 +277,56 @@ struct ProtoMemosEmpty: View {
             }
             .padding(.top, 20)
         }
+    }
+}
+
+struct ProtoLiveMemoDetail: View {
+    @EnvironmentObject var s: ProtoState
+    let memo: MTMemo
+    @State private var comments: [MTComment] = []
+    @State private var draft = ""
+
+    var body: some View {
+        PSheet(title: memo.title, onBack: { s.screen = .memos }, right: AnyView(
+            Button {
+                Task {
+                    try? await s.api?.deleteMemo(id: memo.id)
+                    s.note("已刪除 ✓"); s.screen = .memos
+                }
+            } label: { Text("刪除").foregroundStyle(.red) }
+        )) {
+            if !memo.body.isEmpty {
+                Text(memo.body).frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 10)
+                    .overlay(Divider().opacity(0.6), alignment: .bottom)
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                Text("留言").font(.caption).foregroundStyle(PT.soft)
+                ForEach(comments) { c in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(c.body).font(.subheadline)
+                        Text(c.authorName).font(.caption2).foregroundStyle(PT.soft)
+                    }
+                    .padding(.horizontal, 12).padding(.vertical, 8)
+                    .background(Color(.secondarySystemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                HStack {
+                    TextField("留言…", text: $draft).textFieldStyle(.roundedBorder)
+                    Button {
+                        let t = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !t.isEmpty else { return }
+                        hideKeyboard()
+                        Task {
+                            if let c = try? await s.api?.postMemoComment(memoId: memo.id, body: t) {
+                                comments.append(c); draft = ""
+                            }
+                        }
+                    } label: { Text("送出").foregroundStyle(PT.orange).bold() }
+                }
+            }
+            .padding(.top, 14)
+        }
+        .onAppear { Task { comments = (try? await s.api?.listMemoComments(memoId: memo.id)) ?? [] } }
     }
 }
 

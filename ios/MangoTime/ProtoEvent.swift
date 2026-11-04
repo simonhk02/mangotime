@@ -13,6 +13,7 @@ struct ProtoEventForm: View {
     var body: some View {
         PSheet(title: "新增活動", onBack: { s.screen = .month }, backText: "×", right: AnyView(
             Button {
+                hideKeyboard()
                 if s.api != nil {
                     let t = title.trimmingCharacters(in: .whitespaces)
                     guard !t.isEmpty else { return }

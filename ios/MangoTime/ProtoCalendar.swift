@@ -248,6 +248,7 @@ struct ProtoCalendarList: View {
                 Button {
                     let name = newName.trimmingCharacters(in: .whitespaces)
                     guard !name.isEmpty else { return }
+                    hideKeyboard()
                     newName = ""
                     Task { await s.createLiveCalendar(name: name) }
                 } label: {

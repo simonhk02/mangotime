@@ -1,5 +1,10 @@
 import SwiftUI
 
+/// 收鍵盤（submit 之後叫——唔係鍵盤會遮住底部 tab bar）
+func hideKeyboard() {
+    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+}
+
 /// 原型全域狀態 + 根視圖（splash → login → tab app）
 enum ProtoScreen: Hashable {
     case splash, login
@@ -10,7 +15,7 @@ enum ProtoScreen: Hashable {
     case liveEventDetail(MTEvent)
     case search
     case feed, notices, other, profile
-    case memos, memosEmpty, memoDetail(MockMemo)
+    case memos, memosEmpty, memoDetail(MockMemo), liveMemoDetail(MTMemo)
     case todos, album, members, invite
     case settings, displaySettings, filterSettings, displayCalendar, notifSettings
     case noticeBoard, noticeDetail
@@ -271,6 +276,7 @@ struct ProtoLoginView: View {
                 Text(err).font(.caption).foregroundStyle(.red)
             }
             Button {
+                hideKeyboard()
                 busy = true
                 s.loginError = nil
                 Task {
@@ -373,6 +379,7 @@ struct ProtoContent: View {
             case .memos: ProtoMemos()
             case .memosEmpty: ProtoMemosEmpty()
             case .memoDetail(let m): ProtoMemoDetail(memo: m)
+            case .liveMemoDetail(let m): ProtoLiveMemoDetail(memo: m)
             case .todos: ProtoTodos()
             case .album: ProtoAlbum()
             case .members: ProtoMembers()

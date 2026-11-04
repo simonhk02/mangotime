@@ -6,6 +6,7 @@ import { PrismaClient } from "@prisma/client";
 import { registerAuthRoutes } from "./auth.js";
 import { registerInviteRoutes } from "./invites.js";
 import { registerCommentRoutes } from "./comments.js";
+import { registerMemoRoutes } from "./memos.js";
 import { registerCalendarRoutes } from "./calendars.js";
 import { registerEventRoutes } from "./events.js";
 
@@ -37,6 +38,7 @@ export async function buildApp(prisma?: PrismaClient): Promise<FastifyInstance> 
   registerAuthRoutes(app, db);
   registerInviteRoutes(app, db);
   registerCommentRoutes(app, db);
+  registerMemoRoutes(app, db);
   registerCalendarRoutes(app, db);
   registerEventRoutes(app, db);
 

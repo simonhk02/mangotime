@@ -20,6 +20,8 @@ model User {
   createdCalendars Calendar[]   @relation("CreatedCalendars")
   createdEvents    Event[]      @relation("CreatedEvents")
   comments         Comment[]
+  memos            Memo[]
+  memoComments     MemoComment[]
 }
 
 model Session {
@@ -42,6 +44,7 @@ model Calendar {
   members       CalendarMember[]
   events        Event[]
   invites       Invite[]
+  memos         Memo[]
 }
 
 // Task 1.3 — Invite link（一個行事曆可以有多條，revokedAt 標記失效）
@@ -114,4 +117,33 @@ model Comment {
   createdAt DateTime @default(now())
 
   @@index([eventId, createdAt])
+}
+
+// Task 2.2 — Memo（備忘錄）+ 留言
+model Memo {
+  id         String        @id @default(cuid())
+  calendarId String
+  calendar   Calendar      @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+  title      String
+  body       String        @default("")
+  labelColor String?
+  creatorId  String
+  creator    User          @relation(fields: [creatorId], references: [id])
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  comments   MemoComment[]
+
+  @@index([calendarId, updatedAt])
+}
+
+model MemoComment {
+  id        String   @id @default(cuid())
+  memoId    String
+  memo      Memo     @relation(fields: [memoId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([memoId, createdAt])
 }
