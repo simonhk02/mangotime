@@ -615,7 +615,7 @@ struct ProtoAlbum: View {
     }
 
     private var liveAlbum: some View {
-        PSheet(title: "相簿", onBack: { s.screen = .other }, onRefresh: { await reload() }, right: AnyView(
+        PSheet(title: "相簿", onBack: { s.screen = .other }, right: AnyView(
             PhotosPicker(selection: $pickedItem, matching: .images) {
                 if uploading { ProgressView() } else { Text("＋").foregroundStyle(PT.orange) }
             }
@@ -640,7 +640,7 @@ struct ProtoAlbum: View {
                     s.note("已上傳 ✓")
                 }
             }
-        )) {
+        ), onRefresh: { await reload() }) {
             if livePhotos.isEmpty {
                 EmptyState(icon: "🖼", title: "仲未有相。", sub: "撳右上 ＋ 上傳第一張。")
             }
