@@ -354,7 +354,104 @@ struct ProtoMemoDetail: View {
 struct ProtoTodos: View {
     @EnvironmentObject var s: ProtoState
     @State private var todos = Mock.todos
+    @State private var liveLists: [MTTodoList] = []
+    @State private var newListTitle = ""
+    @State private var newItemText: [String: String] = [:]
+
     var body: some View {
+        if s.api != nil { liveTodos } else { mockTodos }
+    }
+
+    private func reload() async {
+        guard let calId = s.activeCalendarId else { return }
+        liveLists = (try? await s.api?.listTodos(calendarId: calId)) ?? []
+    }
+
+    private var liveTodos: some View {
+        PSheet(title: "待辦清單", onBack: { s.screen = .other }) {
+            ForEach(liveLists) { list in
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack {
+                        Text(list.title).bold()
+                        Spacer()
+                        Text("\(list.done)/\(list.total) 已完成").font(.caption).foregroundStyle(PT.soft)
+                        Button {
+                            Task { try? await s.api?.deleteTodoList(id: list.id); await reload() }
+                        } label: { Image(systemName: "trash").font(.caption).foregroundStyle(.red) }
+                    }
+                    .padding(.vertical, 10)
+                    ForEach(list.items) { item in
+                        Button {
+                            Task {
+                                try? await s.api?.toggleTodoItem(itemId: item.id, done: !item.done)
+                                await reload()
+                            }
+                        } label: {
+                            HStack(spacing: 12) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 6).stroke(item.done ? PT.green : Color(.separator), lineWidth: 2)
+                                        .frame(width: 22, height: 22)
+                                    if item.done {
+                                        RoundedRectangle(cornerRadius: 6).fill(PT.green).frame(width: 22, height: 22)
+                                        Text("✓").font(.caption).bold().foregroundStyle(.white)
+                                    }
+                                }
+                                Text(item.text)
+                                    .strikethrough(item.done)
+                                    .foregroundStyle(item.done ? PT.soft : .primary)
+                                Spacer()
+                            }
+                            .padding(.vertical, 8)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    HStack {
+                        TextField("加一項…", text: Binding(
+                            get: { newItemText[list.id] ?? "" },
+                            set: { newItemText[list.id] = $0 }
+                        )).textFieldStyle(.roundedBorder)
+                        Button {
+                            let t = (newItemText[list.id] ?? "").trimmingCharacters(in: .whitespaces)
+                            guard !t.isEmpty else { return }
+                            hideKeyboard()
+                            newItemText[list.id] = ""
+                            Task {
+                                try? await s.api?.addTodoItem(listId: list.id, text: t)
+                                await reload()
+                            }
+                        } label: { Text("加").bold().foregroundStyle(PT.orange) }
+                    }
+                    .padding(.bottom, 10)
+                    Divider()
+                }
+            }
+            if liveLists.isEmpty {
+                EmptyState(icon: "✅", title: "找不到待辦清單。", sub: "請透過下方建立新的清單。")
+            }
+            HStack {
+                TextField("新清單名稱", text: $newListTitle).textFieldStyle(.roundedBorder)
+                Button {
+                    let t = newListTitle.trimmingCharacters(in: .whitespaces)
+                    guard let calId = s.activeCalendarId, !t.isEmpty else { return }
+                    hideKeyboard()
+                    newListTitle = ""
+                    Task {
+                        try? await s.api?.createTodoList(calendarId: calId, title: t)
+                        await reload()
+                        s.note("已建立 ✓")
+                    }
+                } label: {
+                    Text("＋ 新增清單").bold().foregroundStyle(.white)
+                        .padding(.horizontal, 14).padding(.vertical, 8)
+                        .background(PT.orange).clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+            }
+            .padding(.top, 12)
+        }
+        .onAppear { Task { await reload() } }
+    }
+
+    private var mockTodos: some View {
         PSheet(title: "待辦清單", onBack: { s.screen = .other }, right: AnyView(
             Button { s.note("新增清單（mock）") } label: { Text("＋").foregroundStyle(PT.orange) }
         )) {

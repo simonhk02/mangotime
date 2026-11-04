@@ -284,6 +284,50 @@ extension APIClient {
     }
 }
 
+// MARK: - Todos (task 2.3)
+
+struct MTTodoItem: Codable, Identifiable, Hashable {
+    let id: String
+    let text: String
+    let done: Bool
+}
+struct MTTodoList: Codable, Identifiable, Hashable {
+    let id: String
+    let calendarId: String
+    let title: String
+    let total: Int
+    let done: Int
+    let items: [MTTodoItem]
+}
+struct MTTodoListWrap: Codable { let list: MTTodoList }
+struct MTTodoListsWrap: Codable { let lists: [MTTodoList] }
+struct MTTodoItemWrap: Codable { let item: MTTodoItem }
+
+extension APIClient {
+    func listTodos(calendarId: String) async throws -> [MTTodoList] {
+        let res: MTTodoListsWrap = try await request("GET", "/v1/calendars/\(calendarId)/todos")
+        return res.lists
+    }
+    func createTodoList(calendarId: String, title: String) async throws -> MTTodoList {
+        struct Payload: Encodable { let title: String }
+        let res: MTTodoListWrap = try await request("POST", "/v1/calendars/\(calendarId)/todos", body: Payload(title: title))
+        return res.list
+    }
+    func addTodoItem(listId: String, text: String) async throws -> MTTodoItem {
+        struct Payload: Encodable { let text: String }
+        let res: MTTodoItemWrap = try await request("POST", "/v1/todos/\(listId)/items", body: Payload(text: text))
+        return res.item
+    }
+    func toggleTodoItem(itemId: String, done: Bool) async throws {
+        struct Payload: Encodable { let done: Bool }
+        let _: MTTodoItemWrap = try await request("PATCH", "/v1/todo-items/\(itemId)", body: Payload(done: done))
+    }
+    func deleteTodoList(id: String) async throws {
+        struct Empty: Encodable {}
+        let _: EmptyResponse = try await request("DELETE", "/v1/todos/\(id)", body: Optional<Empty>.none)
+    }
+}
+
 func parseISODate(_ s: String) -> Date? {
     let f = ISO8601DateFormatter()
     f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]

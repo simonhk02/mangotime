@@ -22,6 +22,7 @@ model User {
   comments         Comment[]
   memos            Memo[]
   memoComments     MemoComment[]
+  todoLists        TodoList[]
 }
 
 model Session {
@@ -45,6 +46,7 @@ model Calendar {
   events        Event[]
   invites       Invite[]
   memos         Memo[]
+  todoLists     TodoList[]
 }
 
 // Task 1.3 — Invite link（一個行事曆可以有多條，revokedAt 標記失效）
@@ -146,4 +148,30 @@ model MemoComment {
   createdAt DateTime @default(now())
 
   @@index([memoId, createdAt])
+}
+
+// Task 2.3 — Todo list（待辦清單）+ items
+model TodoList {
+  id         String     @id @default(cuid())
+  calendarId String
+  calendar   Calendar   @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+  title      String
+  creatorId  String
+  creator    User       @relation(fields: [creatorId], references: [id])
+  createdAt  DateTime   @default(now())
+  items      TodoItem[]
+
+  @@index([calendarId])
+}
+
+model TodoItem {
+  id        String   @id @default(cuid())
+  listId    String
+  list      TodoList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  text      String
+  done      Boolean  @default(false)
+  doneById  String?
+  createdAt DateTime @default(now())
+
+  @@index([listId, createdAt])
 }
