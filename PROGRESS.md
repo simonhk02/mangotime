@@ -20,7 +20,7 @@
 | 2.3 | To-Do List | 🟨 待驗收 | List CRUD + item 加/toggle(doneBy)/刪，done/total 計數，outbox todo.*；42/42 tests；production 已部署；iOS 全變真（開清單/加項/tick/刪） | |
 | 2.4 | Album | 🟨 待驗收 | base64 上傳（8MB 上限、jpg/png/webp/heic）→ VPS /data/uploads → cuid 公開 URL（cache 1 年）；44/44 tests；production 實測上傳+攞相 OK；nginx body 20m；iOS PhotosUI 揀相壓縮上傳、AsyncImage grid、長按刪自己相 | |
 | 2.5 | Activity＋Notices | 🟨 待驗收 | /activity 直讀 outbox（全部 18 種動作→廣東話 summary+icon，actor join，46/46 tests）；production 實測 feed OK；iOS 行程 tab 真 feed（相對時間）+ 相簿 tab 真相。Notices（2.6）分開做 | |
-| 2.6 | Notifications | ⬜ | | |
+| 2.6 | Notifications | 🟨 待驗收 | /notices：其他成員喺我行事曆嘅動作（自己嘅唔計，48/48 tests）；production 已部署；iOS 通知頁變真+下拉更新。APNs 推送留返上架前 | |
 | 3.1 | Weekly／直向 view | ⬜ | | |
 | 3.2 | Search | ⬜ | | |
 | 3.3 | Dark mode | ⬜ | | |
