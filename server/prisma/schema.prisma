@@ -25,6 +25,7 @@ model User {
   todoLists        TodoList[]
   photos           Photo[]
   apiKeys          ApiKey[]
+  attachments      Attachment[]
 }
 
 model Session {
@@ -109,6 +110,7 @@ model Event {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   comments   Comment[]
+  attachments Attachment[]
 
   @@index([calendarId, startsAt])
 }
@@ -207,6 +209,21 @@ model ApiKey {
   createdAt  DateTime  @default(now())
   lastUsedAt DateTime?
   revokedAt  DateTime?
+}
+
+// Task 5.4 — Event attachment（活動附件：相/PDF 釘落活動）
+model Attachment {
+  id         String   @id @default(cuid())
+  eventId    String
+  event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  uploaderId String
+  uploader   User     @relation(fields: [uploaderId], references: [id])
+  filename   String
+  mimeType   String
+  size       Int
+  createdAt  DateTime @default(now())
+
+  @@index([eventId])
 }
 
 // Task 4.2 — Webhook 訂閱（每個行事曆可有多條；dispatcher 讀 OutboxEvent 派遞）

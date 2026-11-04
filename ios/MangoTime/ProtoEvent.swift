@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 
 struct ProtoEventForm: View {
     @EnvironmentObject var s: ProtoState
@@ -204,6 +205,7 @@ struct ProtoLiveEventDetail: View {
             if let loc = ev.location, !loc.isEmpty { PRow(label: "📍 地點", value: loc) }
             if ev.repeatRule != "none" { PRow(label: "🔁 重複", value: ev.repeatRule) }
             if let note = ev.note, !note.isEmpty { PRow(label: "🗒 備註", value: note) }
+            LiveAttachments(eventId: ev.id)
             LiveChat(eventId: ev.id)
             Button {
                 Task { await s.deleteLiveEvent(ev) }
@@ -213,6 +215,53 @@ struct ProtoLiveEventDetail: View {
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.red))
             }
             .padding(.top, 18)
+        }
+    }
+}
+
+/// 活動附件（task 5.4）：上傳 + 顯示（相縮圖 / PDF 連結）
+struct LiveAttachments: View {
+    let eventId: String
+    @State private var attachments: [MTAttachment] = []
+    @State private var picked: PhotosPickerItem?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("📎 附件").font(.caption).foregroundStyle(PT.soft)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(attachments) { a in
+                        if a.mimeType.hasPrefix("image/") {
+                            AsyncImage(url: APIClient.shared.fileURL(a.url)) { img in
+                                img.resizable().scaledToFill()
+                            } placeholder: { Color(.secondarySystemBackground) }
+                            .frame(width: 72, height: 72)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                        } else {
+                            VStack { Image(systemName: "doc.fill").font(.title2); Text("PDF").font(.caption2) }
+                                .frame(width: 72, height: 72)
+                                .background(Color(.secondarySystemBackground))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                    }
+                    PhotosPicker(selection: $picked, matching: .images) {
+                        VStack { Image(systemName: "plus"); Text("加相").font(.caption2) }
+                            .foregroundStyle(PT.orange)
+                            .frame(width: 72, height: 72)
+                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(style: StrokeStyle(lineWidth: 1, dash: [5])).foregroundStyle(PT.orange.opacity(0.5)))
+                    }
+                }
+            }
+        }
+        .padding(.top, 12)
+        .task { attachments = (try? await APIClient.shared.listAttachments(eventId: eventId)) ?? [] }
+        .onChange(of: picked) { _, item in
+            Task {
+                guard let item, let data = try? await item.loadTransferable(type: Data.self) else { return }
+                try? await APIClient.shared.uploadAttachment(eventId: eventId, data: data, mimeType: "image/jpeg")
+                attachments = (try? await APIClient.shared.listAttachments(eventId: eventId)) ?? []
+                picked = nil
+            }
         }
     }
 }

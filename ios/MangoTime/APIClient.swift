@@ -153,6 +153,7 @@ struct MTEvent: Codable, Identifiable, Hashable {
 
 struct EventResponse: Codable { let event: MTEvent }
 struct EventListResponse: Codable { let events: [MTEvent] }
+struct AttachmentListResponse: Codable { let attachments: [MTAttachment] }
 
 extension APIClient {
     func listEvents(calendarId: String, from: Date, to: Date) async throws -> [MTEvent] {
@@ -386,6 +387,16 @@ extension APIClient {
 
 // MARK: - Activity (task 2.5)
 
+struct MTAttachment: Codable, Identifiable, Hashable {
+    let id: String
+    let url: String
+    let mimeType: String
+    let size: Int
+    let uploaderId: String
+    let uploaderName: String
+    let createdAt: String
+}
+
 struct MTActivity: Codable, Identifiable, Hashable {
     let id: String
     let type: String
@@ -415,6 +426,15 @@ extension APIClient {
         struct Empty: Encodable {}
         let res: R = try await request("POST", "/v1/calendars/\(calendarId)/public", body: Optional<Empty>.none)
         return res.publicSlug
+    }
+    func listAttachments(eventId: String) async throws -> [MTAttachment] {
+        let res: AttachmentListResponse = try await request("GET", "/v1/events/\(eventId)/attachments")
+        return res.attachments
+    }
+    func uploadAttachment(eventId: String, data: Data, mimeType: String) async throws {
+        struct Req: Encodable { let data: String; let mimeType: String }
+        struct Res: Codable { let attachment: MTAttachment }
+        let _: Res = try await request("POST", "/v1/events/\(eventId)/attachments", body: Req(data: data.base64EncodedString(), mimeType: mimeType))
     }
 }
 

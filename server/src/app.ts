@@ -14,6 +14,7 @@ import { registerNoticeRoutes } from "./notices.js";
 import { registerApiKeyRoutes } from "./apikeys.js";
 import { registerWebhookRoutes } from "./webhooks.js";
 import { registerPublicRoutes } from "./public.js";
+import { registerAttachmentRoutes } from "./attachments.js";
 import { registerCalendarRoutes } from "./calendars.js";
 import { registerEventRoutes } from "./events.js";
 
@@ -56,6 +57,7 @@ export async function buildApp(prisma?: PrismaClient): Promise<FastifyInstance> 
   registerApiKeyRoutes(app, db);
   registerWebhookRoutes(app, db);
   registerPublicRoutes(app, db);
+  registerAttachmentRoutes(app, db);
   registerCalendarRoutes(app, db);
   registerEventRoutes(app, db);
 
