@@ -115,7 +115,7 @@ final class MangoTimeUITests: XCTestCase {
         // 備忘錄：其他 → 備忘錄 → 開新
         tapAny(app.buttons["tab_other"])
         sleep(1)
-        tapAny(app.staticTexts["📝 備忘錄"])
+        tapAny(app.staticTexts["備忘錄"])
         sleep(1)
         let memoField = app.textFields["memo_new_title"]
         if memoField.waitForExistence(timeout: 4) {
@@ -128,7 +128,7 @@ final class MangoTimeUITests: XCTestCase {
         sleep(1)
 
         // 待辦：開清單 → 加項 → tick
-        tapAny(app.staticTexts["✅ 待辦清單"])
+        tapAny(app.staticTexts["待辦清單"])
         sleep(1)
         let listField = app.textFields["新清單名稱"]
         if listField.waitForExistence(timeout: 4) {
