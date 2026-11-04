@@ -179,36 +179,89 @@ struct ProtoMonthScreen: View {
         }
     }
 
+    // 直向時間軸週曆：左邊 00–23 鐘，活動按時間擺位（TimeTree 直向 view）
+    private let hourH: CGFloat = 42
+
+    private func parseHour(_ time: String) -> (start: Double, end: Double)? {
+        // "19:30–23:00" / "08:00–10:00" / "全日"
+        if time == "全日" { return nil }
+        let parts = time.replacingOccurrences(of: "–", with: "-").split(separator: "-")
+        guard parts.count == 2 else { return nil }
+        func h(_ s: Substring) -> Double? {
+            let p = s.split(separator: ":")
+            guard p.count == 2, let hh = Double(p[0]), let mm = Double(p[1]) else { return nil }
+            return hh + mm / 60
+        }
+        guard let a = h(parts[0]), let b = h(parts[1]) else { return nil }
+        return (a, b)
+    }
+
+    private func liveHour(_ ev: MTEvent) -> (start: Double, end: Double)? {
+        guard let st = parseISODate(ev.startsAt) else { return nil }
+        if ev.allDay { return nil }
+        let start = Double(cal.component(.hour, from: st)) + Double(cal.component(.minute, from: st)) / 60
+        var end = start + 1
+        if let en = ev.endsAt.flatMap(parseISODate) {
+            end = Double(cal.component(.hour, from: en)) + Double(cal.component(.minute, from: en)) / 60
+        }
+        return (start, max(end, start + 0.5))
+    }
+
     private var weekView: some View {
         let cells = monthCells(base: today, weekStartMonday: s.weekStartMonday)
         let startOfWeek = cal.dateInterval(of: .weekOfYear, for: today)!.start
         let week = cells.filter { cal.isDate($0.date, equalTo: startOfWeek, toGranularity: .weekOfYear) }
-        return ScrollView(.horizontal, showsIndicators: false) {
-            HStack(alignment: .top, spacing: 4) {
-                ForEach(week) { cell in
-                    VStack(spacing: 4) {
-                        Text("\(wd[cal.component(.weekday, from: cell.date) - 1]) \(cal.component(.day, from: cell.date))")
-                            .font(.caption2).foregroundStyle(PT.soft)
-                        ForEach(eventsFor(cell)) { ev in
-                            Text(ev.title).font(.system(size: 9)).lineLimit(1)
-                                .padding(.horizontal, 4).padding(.vertical, 2)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(ev.color).foregroundStyle(.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 3))
-                                .onTapGesture {
-                                    if let live = ev.live { s.screen = .liveEventDetail(live) }
-                                    else if let mock = ev.mock { s.screen = .eventDetail(mock) }
-                                }
-                        }
-                        Spacer(minLength: 0)
+        return ScrollView([.vertical, .horizontal], showsIndicators: false) {
+            HStack(alignment: .top, spacing: 0) {
+                // 時間軸
+                VStack(spacing: 0) {
+                    Text("").frame(height: 26)
+                    ForEach(0..<24, id: \.self) { h in
+                        Text(String(format: "%02d:00", h))
+                            .font(.system(size: 8))
+                            .foregroundStyle(PT.soft)
+                            .frame(width: 34, height: hourH, alignment: .topTrailing)
                     }
-                    .padding(5)
-                    .frame(width: 110, height: 300)
-                    .background(Color(.secondarySystemBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                // 日欄
+                ForEach(week) { cell in
+                    let dayEvs = eventsFor(cell)
+                    VStack(spacing: 0) {
+                        Text("\(wd[cal.component(.weekday, from: cell.date) - 1]) \(cal.component(.day, from: cell.date))")
+                            .font(.caption2).foregroundStyle(cell.other ? PT.soft : .primary)
+                            .frame(height: 26)
+                        ZStack(alignment: .topLeading) {
+                            // 格線
+                            VStack(spacing: 0) {
+                                ForEach(0..<24, id: \.self) { _ in
+                                    Divider().opacity(0.4).frame(height: hourH)
+                                }
+                            }
+                            // 全日活動（頂部細條）
+                            // 定時活動按鐘擺位
+                            ForEach(dayEvs) { ev in
+                                if let range = ev.live != nil ? liveHour(ev.live!) : parseHour(ev.mock?.time ?? "") {
+                                    Button {
+                                        if let live = ev.live { s.screen = .liveEventDetail(live) }
+                                        else if let mock = ev.mock { s.screen = .eventDetail(mock) }
+                                    } label: {
+                                        Text(ev.title)
+                                            .font(.system(size: 8)).lineLimit(2)
+                                            .padding(3)
+                                            .frame(width: 58, height: max(20, CGFloat(range.end - range.start) * hourH), alignment: .topLeading)
+                                            .background(ev.color.opacity(0.85))
+                                            .foregroundStyle(.white)
+                                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                                    }
+                                    .offset(y: CGFloat(range.start) * hourH)
+                                }
+                            }
+                        }
+                        .frame(width: 60)
+                    }
                 }
             }
-            .padding(.horizontal, 10)
+            .padding(.horizontal, 6)
         }
     }
 }
