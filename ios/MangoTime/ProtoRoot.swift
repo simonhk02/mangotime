@@ -192,7 +192,8 @@ struct ProtoRootView: View {
     var live: Bool = false
 
     var body: some View {
-        ZStack(alignment: .top) {
+        // 注意：唔好用 ZStack root——會破壞 SwiftUI 鍵盤避讓（輸入位俾鍵盤遮，UAT 真撳捉到）
+        Group {
             switch s.screen {
             case .splash: SplashView()
             case .login: ProtoLoginView()
@@ -204,6 +205,8 @@ struct ProtoRootView: View {
                     }
                 }
             }
+        }
+        .overlay(alignment: .top) {
             if !s.toast.isEmpty {
                 Text(s.toast)
                     .font(.footnote).foregroundStyle(.white)
@@ -213,9 +216,9 @@ struct ProtoRootView: View {
                     .padding(.top, 50)
                     .transition(.opacity)
             }
-            if s.upsell { PremiumUpsell() }
-            if s.photoPerm { PhotoPermAlert() }
         }
+        .overlay { if s.upsell { PremiumUpsell() } }
+        .overlay { if s.photoPerm { PhotoPermAlert() } }
         .environmentObject(s)
         .onAppear {
             guard live, s.api == nil else { return }

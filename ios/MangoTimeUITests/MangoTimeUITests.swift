@@ -13,13 +13,10 @@ final class MangoTimeUITests: XCTestCase {
         app.launch()
     }
 
-    /// tap 完等鍵盤出先打字；typeText 行 app level（hit-test 唔啱 SwiftUI 嘅 ScrollView 會炸）
+    /// 座標 tap 一次（唔行 scroll-to-visible，咁先唔會炸 kAXScrollToVisible）→ 等鍵盤 → app level 打字
     func typeInto(_ field: XCUIElement, _ text: String) {
-        field.tap()
-        if !app.keyboards.element.waitForExistence(timeout: 3) {
-            field.tap()
-            _ = app.keyboards.element.waitForExistence(timeout: 3)
-        }
+        field.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        _ = app.keyboards.element.waitForExistence(timeout: 5)
         app.typeText(text)
     }
 
