@@ -2,14 +2,25 @@ import SwiftUI
 
 struct ProtoEventForm: View {
     @EnvironmentObject var s: ProtoState
-    @State private var title = "打邊爐"
+    @State private var title = ""
     @State private var saveAsMemo = false
     @State private var allDay = false
     @State private var showLabels = false
     @State private var labelIdx = 0
+    @State private var date = Date()
+    private var labelKeys = ["bright-orange", "emerald", "blue", "red", "purple"]
+
     var body: some View {
         PSheet(title: "新增活動", onBack: { s.screen = .month }, backText: "×", right: AnyView(
-            Button { s.note("已保存（mock）"); s.screen = .month } label: {
+            Button {
+                if s.api != nil {
+                    let t = title.trimmingCharacters(in: .whitespaces)
+                    guard !t.isEmpty else { return }
+                    Task { await s.createLiveEvent(title: t, date: date, allDay: allDay, labelColor: labelKeys[labelIdx]) }
+                } else {
+                    s.note("已保存（mock）"); s.screen = .month
+                }
+            } label: {
                 Text("保存").bold().foregroundStyle(.white)
                     .padding(.horizontal, 14).padding(.vertical, 6)
                     .background(PT.orange).clipShape(RoundedRectangle(cornerRadius: 8))
@@ -52,9 +63,14 @@ struct ProtoEventForm: View {
                 .background(Color(.secondarySystemBackground))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
             }
-            PRow(label: "🕐 日期", value: "11月19日（週四）") { s.note("日期選擇器（mock）") }
-            PRow(label: "全日", toggle: $allDay)
-            if !allDay { PRow(label: "時間", value: "19:30 – 23:00") { s.note("時間選擇器（mock）") } }
+            if s.api != nil {
+                DatePicker("🕐 日期", selection: $date, displayedComponents: allDay ? [.date] : [.date, .hourAndMinute])
+                PRow(label: "全日", toggle: $allDay)
+            } else {
+                PRow(label: "🕐 日期", value: "11月19日（週四）") { s.note("日期選擇器（mock）") }
+                PRow(label: "全日", toggle: $allDay)
+                if !allDay { PRow(label: "時間", value: "19:30 – 23:00") { s.note("時間選擇器（mock）") } }
+            }
             PRow(label: "🔁 重複", value: "唔重複") { s.note("重複選項（mock）") }
             PRow(label: "👥 成員", value: "全部成員") { s.note("揀成員（mock）") }
             PRow(label: "📍 地點", value: "未填") { s.note("地點輸入（mock）") }
@@ -110,6 +126,44 @@ struct ProtoEventDetail: View {
             PRow(label: "👥 成員", value: "全部成員")
             ChatBox(msgs: [("老婆", "買緊嘢食，要乜？", false), ("我", "沙茶醬幫手攞支", true)])
             Button { s.note("已刪除（mock）"); s.screen = .month } label: {
+                Text("刪除活動").bold().foregroundStyle(.red)
+                    .frame(maxWidth: .infinity).padding(.vertical, 12)
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.red))
+            }
+            .padding(.top, 18)
+        }
+    }
+}
+
+struct ProtoLiveEventDetail: View {
+    @EnvironmentObject var s: ProtoState
+    let ev: MTEvent
+
+    private var startText: String {
+        guard let d = parseISODate(ev.startsAt) else { return ev.startsAt }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "zh_HK")
+        f.dateFormat = ev.allDay ? "M月d日（E）全日" : "M月d日（E）HH:mm"
+        return f.string(from: d)
+    }
+
+    var body: some View {
+        PSheet(title: ev.title, onBack: { s.screen = .month }) {
+            PRow(label: "🕐", value: startText)
+            HStack {
+                Text("🏷 標籤")
+                Spacer()
+                Text(ev.labelColor ?? "bright-orange").font(.subheadline).foregroundStyle(PT.soft)
+            }
+            .padding(.vertical, 12)
+            .overlay(Divider().opacity(0.6), alignment: .bottom)
+            if let loc = ev.location, !loc.isEmpty { PRow(label: "📍 地點", value: loc) }
+            if ev.repeatRule != "none" { PRow(label: "🔁 重複", value: ev.repeatRule) }
+            if let note = ev.note, !note.isEmpty { PRow(label: "🗒 備註", value: note) }
+            ChatBox(msgs: [])
+            Button {
+                Task { await s.deleteLiveEvent(ev) }
+            } label: {
                 Text("刪除活動").bold().foregroundStyle(.red)
                     .frame(maxWidth: .infinity).padding(.vertical, 12)
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.red))

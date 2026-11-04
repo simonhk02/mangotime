@@ -7,6 +7,7 @@ enum ProtoScreen: Hashable {
     case calendarList, monthPicker
     case create, noteEdit
     case eventDetail(MockEvent)
+    case liveEventDetail(MTEvent)
     case search
     case feed, notices, other, profile
     case memos, memosEmpty, memoDetail(MockMemo)
@@ -26,6 +27,70 @@ final class ProtoState: ObservableObject {
     @Published var toast = ""
     @Published var upsell = false
     @Published var photoPerm = false
+
+    // LIVE 模式（api != nil）：月曆/行事曆/活動用真 server data，其餘畫面暫時 mock
+    var api: APIClient?
+    @Published var liveCalendars: [MTCalendar] = []
+    @Published var liveEvents: [MTEvent] = []
+    @Published var activeCalendarId: String?
+    @Published var loginError: String?
+
+    @MainActor
+    func loadLive() async {
+        guard let api else { return }
+        do {
+            liveCalendars = try await api.listCalendars()
+            if activeCalendarId == nil { activeCalendarId = liveCalendars.first?.id }
+            if let calId = activeCalendarId {
+                let cal = Calendar(identifier: .gregorian)
+                let comps = cal.dateComponents([.year, .month], from: Date())
+                let from = cal.date(from: comps)!
+                let to = cal.date(byAdding: .month, value: 1, to: from)!
+                liveEvents = try await api.listEvents(calendarId: calId, from: from, to: to)
+            }
+        } catch {
+            note("載入失敗：\(error.localizedDescription)")
+        }
+    }
+
+    @MainActor
+    func createLiveEvent(title: String, date: Date, allDay: Bool, labelColor: String) async {
+        guard let api, let calId = activeCalendarId else { return }
+        do {
+            _ = try await api.createEvent(calendarId: calId, title: title, startsAt: date, allDay: allDay, repeatRule: "none", labelColor: labelColor, location: nil, note: nil)
+            note("已保存 ✓")
+            await loadLive()
+            screen = .month
+        } catch {
+            note("保存失敗：\(error.localizedDescription)")
+        }
+    }
+
+    @MainActor
+    func createLiveCalendar(name: String) async {
+        guard let api else { return }
+        do {
+            let cal = try await api.createCalendar(name: name)
+            activeCalendarId = cal.id
+            await loadLive()
+            note("已開行事曆 ✓")
+        } catch {
+            note("失敗：\(error.localizedDescription)")
+        }
+    }
+
+    @MainActor
+    func deleteLiveEvent(_ ev: MTEvent) async {
+        guard let api else { return }
+        do {
+            try await api.deleteEvent(calendarId: ev.calendarId, eventId: ev.id)
+            note("已刪除 ✓")
+            await loadLive()
+            screen = .month
+        } catch {
+            note("刪除失敗：\(error.localizedDescription)")
+        }
+    }
 
     init() {
         // 驗證用：launch argument `-screen <name>` 直達指定畫面（cap 圖對照參考圖）
@@ -93,6 +158,7 @@ final class ProtoState: ObservableObject {
 
 struct ProtoRootView: View {
     @StateObject private var s = ProtoState()
+    var live: Bool = false
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -120,6 +186,16 @@ struct ProtoRootView: View {
             if s.photoPerm { PhotoPermAlert() }
         }
         .environmentObject(s)
+        .onAppear {
+            guard live, s.api == nil else { return }
+            s.api = APIClient.shared
+            if APIClient.shared.token != nil {
+                s.screen = .month
+                Task { await s.loadLive() }
+            } else {
+                s.screen = .login
+            }
+        }
     }
 }
 
@@ -145,31 +221,70 @@ struct SplashView: View {
 
 struct ProtoLoginView: View {
     @EnvironmentObject var s: ProtoState
+    @State private var email = ""
+    @State private var password = ""
+    @State private var name = ""
+    @State private var registerMode = false
+    @State private var busy = false
+
     var body: some View {
         VStack(spacing: 14) {
             Spacer()
             Text("MangoTime").font(.largeTitle).bold()
             Text("一齊夾時間，一家人一個曆").font(.subheadline).foregroundStyle(PT.soft)
-            TextField("電郵", text: .constant("")).textFieldStyle(.roundedBorder).keyboardType(.emailAddress)
-            SecureField("密碼", text: .constant("")).textFieldStyle(.roundedBorder)
-            Button { s.screen = .month } label: {
-                Text("登入").bold().foregroundStyle(.white)
+            if registerMode {
+                TextField("名稱", text: $name).textFieldStyle(.roundedBorder)
+            }
+            TextField("電郵", text: $email).textFieldStyle(.roundedBorder).keyboardType(.emailAddress)
+                .textInputAutocapitalization(.never).autocorrectionDisabled()
+            SecureField("密碼", text: $password).textFieldStyle(.roundedBorder)
+            if let err = s.loginError {
+                Text(err).font(.caption).foregroundStyle(.red)
+            }
+            Button {
+                busy = true
+                s.loginError = nil
+                Task {
+                    defer { busy = false }
+                    do {
+                        if registerMode {
+                            try await s.api?.register(email: email, password: password, displayName: name.isEmpty ? email : name)
+                        } else {
+                            try await s.api?.login(email: email, password: password)
+                        }
+                        s.screen = .month
+                        await s.loadLive()
+                    } catch {
+                        s.loginError = error.localizedDescription
+                    }
+                }
+            } label: {
+                Text(busy ? "…" : (registerMode ? "註冊" : "登入")).bold().foregroundStyle(.white)
                     .frame(maxWidth: .infinity).padding(.vertical, 13)
                     .background(PT.orange).clipShape(RoundedRectangle(cornerRadius: 10))
             }
-            Button("未有帳號？註冊") { s.screen = .month }.foregroundStyle(PT.orange)
-            Text("或").font(.caption).foregroundStyle(PT.soft)
-            Button { s.screen = .month } label: {
-                Label("使用 Apple 登入", systemImage: "applelogo")
-                    .frame(maxWidth: .infinity).padding(.vertical, 12)
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(.separator)))
+            .disabled(busy || email.isEmpty || password.count < 8)
+            if s.api == nil {
+                // mock 模式：撳就入
+                Button("未有帳號？註冊") { s.screen = .month }.foregroundStyle(PT.orange)
+                Text("或").font(.caption).foregroundStyle(PT.soft)
+                Button { s.screen = .month } label: {
+                    Label("使用 Apple 登入", systemImage: "applelogo")
+                        .frame(maxWidth: .infinity).padding(.vertical, 12)
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(.separator)))
+                }
+                Button { s.screen = .month } label: {
+                    Text("G 使用 Google 登入")
+                        .frame(maxWidth: .infinity).padding(.vertical, 12)
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(.separator)))
+                }
+                .foregroundStyle(.primary)
+            } else {
+                Button(registerMode ? "已經有帳號？登入" : "未有帳號？註冊") {
+                    registerMode.toggle(); s.loginError = nil
+                }
+                .foregroundStyle(PT.orange)
             }
-            Button { s.screen = .month } label: {
-                Text("G 使用 Google 登入")
-                    .frame(maxWidth: .infinity).padding(.vertical, 12)
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(.separator)))
-            }
-            .foregroundStyle(.primary)
             Spacer()
         }
         .padding(.horizontal, 32)
@@ -217,6 +332,7 @@ struct ProtoContent: View {
             case .create: ProtoEventForm()
             case .noteEdit: ProtoNoteEdit()
             case .eventDetail(let ev): ProtoEventDetail(ev: ev)
+            case .liveEventDetail(let ev): ProtoLiveEventDetail(ev: ev)
             case .search: ProtoSearch()
             case .feed: ProtoFeed()
             case .notices: ProtoNotices()

@@ -102,10 +102,10 @@ struct ProtoOther: View {
                     Button { s.screen = .profile } label: {
                         HStack(spacing: 12) {
                             Circle().fill(PT.orange).frame(width: 52, height: 52)
-                                .overlay(Text("文").font(.title3).foregroundStyle(.white))
+                                .overlay(Text(String((s.api?.currentUser?.displayName ?? "阿文").prefix(1))).font(.title3).foregroundStyle(.white))
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("阿文").bold()
-                                Text("simonhk02@gmail.com").font(.caption).foregroundStyle(PT.soft)
+                                Text(s.api?.currentUser?.displayName ?? "阿文").bold()
+                                Text(s.api?.currentUser?.email ?? "simonhk02@gmail.com").font(.caption).foregroundStyle(PT.soft)
                             }
                             Spacer()
                             Image(systemName: "chevron.right").font(.caption).foregroundStyle(PT.soft)
@@ -144,18 +144,31 @@ struct ProtoOther: View {
 struct ProtoProfile: View {
     @EnvironmentObject var s: ProtoState
     var body: some View {
+        let user = s.api?.currentUser
+        let name = user?.displayName ?? "阿文"
+        let email = user?.email ?? "simonhk02@gmail.com"
         PSheet(title: "個人檔案", onBack: { s.screen = .other }) {
             VStack(spacing: 8) {
                 Circle().fill(PT.orange).frame(width: 72, height: 72)
-                    .overlay(Text("文").font(.title).foregroundStyle(.white))
-                Text("阿文").bold()
-                Text("simonhk02@gmail.com").font(.caption).foregroundStyle(PT.soft)
+                    .overlay(Text(String(name.prefix(1))).font(.title).foregroundStyle(.white))
+                Text(name).bold()
+                Text(email).font(.caption).foregroundStyle(PT.soft)
             }
             .frame(maxWidth: .infinity).padding(.vertical, 18)
-            PRow(label: "名稱", value: "阿文") { s.note("改名（mock）") }
-            PRow(label: "電郵", value: "simonhk02@gmail.com")
+            PRow(label: "名稱", value: name) { s.note("改名（mock）") }
+            PRow(label: "電郵", value: email)
             PRow(label: "連結帳戶", value: "Google · Apple") { s.note("連結帳戶（mock）") }
-            Button { s.screen = .login } label: {
+            Button {
+                if s.api != nil {
+                    Task {
+                        await s.api?.logout()
+                        s.liveCalendars = []; s.liveEvents = []; s.activeCalendarId = nil
+                        s.screen = .login
+                    }
+                } else {
+                    s.screen = .login
+                }
+            } label: {
                 Text("登出").bold().foregroundStyle(.red)
                     .frame(maxWidth: .infinity).padding(.vertical, 12)
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.red))

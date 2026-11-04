@@ -41,7 +41,7 @@ struct ProtoMonthScreen: View {
         VStack(spacing: 0) {
             PNavBar("\(cal.component(.year, from: today))年\(cal.component(.month, from: today))月 ～", left: {
                 Button { s.screen = .calendarList } label: {
-                    Text("家庭日曆 ▾").font(.subheadline).foregroundStyle(PT.orange)
+                    Text("\(s.api != nil ? (s.liveCalendars.first(where: { $0.id == s.activeCalendarId })?.name ?? "行事曆") : "家庭日曆") ▾").font(.subheadline).foregroundStyle(PT.orange)
                 }
             }, right: {
                 HStack(spacing: 14) {
@@ -73,10 +73,50 @@ struct ProtoMonthScreen: View {
         s.weekStartMonday ? Array(wd[1...6]) + [wd[0]] : wd
     }
 
-    private func eventsFor(_ cell: DayCell) -> [MockEvent] {
+    struct DisplayEvent: Identifiable {
+        let id: String
+        let title: String
+        let color: Color
+        let attach: Int
+        let mock: MockEvent?
+        let live: MTEvent?
+    }
+
+    private func labelColor(_ key: String?) -> Color {
+        switch key {
+        case "emerald": return PT.green
+        case "blue": return PT.blue
+        case "red": return PT.red
+        case "purple": return PT.purple
+        case "amber": return .orange
+        default: return PT.orange
+        }
+    }
+
+    private func eventsFor(_ cell: DayCell) -> [DisplayEvent] {
         guard !cell.other else { return [] }
+        if s.api != nil {
+            // LIVE：repeatRule 展開（同 web 版邏輯）
+            return s.liveEvents.compactMap { ev in
+                guard let start = parseISODate(ev.startsAt) else { return nil }
+                let sameDay = cal.isDate(start, inSameDayAs: cell.date)
+                var show = sameDay
+                if !show && ev.repeatRule != "none" && start <= cell.date {
+                    switch ev.repeatRule {
+                    case "daily": show = true
+                    case "weekly": show = cal.component(.weekday, from: start) == cal.component(.weekday, from: cell.date)
+                    case "monthly": show = cal.component(.day, from: start) == cal.component(.day, from: cell.date)
+                    case "yearly": show = cal.component(.day, from: start) == cal.component(.day, from: cell.date) && cal.component(.month, from: start) == cal.component(.month, from: cell.date)
+                    default: break
+                    }
+                }
+                return show ? DisplayEvent(id: ev.id, title: ev.title, color: labelColor(ev.labelColor), attach: 0, mock: nil, live: ev) : nil
+            }
+        }
         let d = cal.component(.day, from: cell.date)
-        return Mock.events.filter { $0.day == d }
+        return Mock.events.filter { $0.day == d }.map {
+            DisplayEvent(id: $0.id, title: $0.title, color: $0.color, attach: $0.attach, mock: $0, live: nil)
+        }
     }
 
     private var monthGrid: some View {
@@ -94,7 +134,10 @@ struct ProtoMonthScreen: View {
                     let evs = eventsFor(cell)
                     let isToday = !cell.other && cal.isDateInToday(cell.date)
                     Button {
-                        if let ev = evs.first { s.screen = .eventDetail(ev) } else { s.screen = .create }
+                        if let first = evs.first {
+                            if let live = first.live { s.screen = .liveEventDetail(live) }
+                            else if let mock = first.mock { s.screen = .eventDetail(mock) }
+                        } else { s.screen = .create }
                     } label: {
                         VStack(spacing: 1) {
                             HStack(alignment: .firstTextBaseline, spacing: 2) {
@@ -147,7 +190,10 @@ struct ProtoMonthScreen: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .background(ev.color).foregroundStyle(.white)
                                 .clipShape(RoundedRectangle(cornerRadius: 3))
-                                .onTapGesture { s.screen = .eventDetail(ev) }
+                                .onTapGesture {
+                                    if let live = ev.live { s.screen = .liveEventDetail(live) }
+                                    else if let mock = ev.mock { s.screen = .eventDetail(mock) }
+                                }
                         }
                         Spacer(minLength: 0)
                     }
@@ -164,7 +210,54 @@ struct ProtoMonthScreen: View {
 
 struct ProtoCalendarList: View {
     @EnvironmentObject var s: ProtoState
+    @State private var newName = ""
     var body: some View {
+        if s.api != nil { liveList } else { mockList }
+    }
+
+    private var liveList: some View {
+        PSheet(title: "行事曆清單", onBack: { s.screen = .month }) {
+            VStack(spacing: 0) {
+                ForEach(s.liveCalendars) { cal in
+                    Button {
+                        s.activeCalendarId = cal.id
+                        Task { await s.loadLive() }
+                        s.screen = .month
+                    } label: {
+                        HStack(spacing: 10) {
+                            Circle().fill(PT.orange).frame(width: 10, height: 10)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(cal.name).bold(cal.id == s.activeCalendarId).foregroundStyle(.primary)
+                                Text("行事曆").font(.caption).foregroundStyle(PT.soft)
+                            }
+                            Spacer()
+                            if cal.id == s.activeCalendarId { Text("◎").foregroundStyle(PT.orange) }
+                        }
+                        .padding(.vertical, 10)
+                        .overlay(Divider().opacity(0.5), alignment: .bottom)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.top, 8)
+            HStack {
+                TextField("新行事曆名稱", text: $newName).textFieldStyle(.roundedBorder)
+                Button {
+                    let name = newName.trimmingCharacters(in: .whitespaces)
+                    guard !name.isEmpty else { return }
+                    newName = ""
+                    Task { await s.createLiveCalendar(name: name) }
+                } label: {
+                    Text("建立").bold().foregroundStyle(.white)
+                        .padding(.horizontal, 14).padding(.vertical, 8)
+                        .background(PT.orange).clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+            }
+            .padding(.top, 12)
+        }
+    }
+
+    private var mockList: some View {
         PSheet(title: "行事曆清單", onBack: { s.screen = .month }, right: AnyView(
             Button { s.note("新增行事曆（mock）") } label: { Text("＋").foregroundStyle(PT.orange) }
         )) {

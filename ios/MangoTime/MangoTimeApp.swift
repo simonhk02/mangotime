@@ -6,23 +6,11 @@ struct MangoTimeApp: App {
 
     var body: some Scene {
         WindowGroup {
-            // 現階段：預設行原型（TestFlight 驗畫面）；真 app 流程留喺 -real 後面
-            if ProcessInfo.processInfo.arguments.contains("-real") {
-                Group {
-                    if api.token != nil {
-                        ContentView()
-                    } else {
-                        AuthView()
-                    }
-                }
-                .environmentObject(api)
-                .task {
-                    if api.token != nil {
-                        try? await api.fetchMe()
-                    }
-                }
+            // 預設：LIVE 模式（駁真 server）；`-proto` = 純 mock 原型（cap 圖用）
+            if ProcessInfo.processInfo.arguments.contains("-proto") {
+                ProtoRootView(live: false)
             } else {
-                ProtoRootView()
+                ProtoRootView(live: true)
             }
         }
     }

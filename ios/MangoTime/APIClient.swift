@@ -29,11 +29,8 @@ enum APIError: LocalizedError {
 final class APIClient: ObservableObject {
     static let shared = APIClient()
 
-    #if targetEnvironment(simulator)
-    static let defaultBaseURL = "http://localhost:8787"
-    #else
-    static let defaultBaseURL = "http://192.168.0.145:8787"
-    #endif
+    // 正式 server（VPS docker，nginx + LE HTTPS）
+    static let defaultBaseURL = "https://mangotime-api.149-28-154-219.sslip.io"
 
     var baseURL: String
     @Published private(set) var token: String? {
@@ -130,4 +127,65 @@ struct AnyEncodable: Encodable {
     private let encodeFn: (Encoder) throws -> Void
     init(_ wrapped: Encodable) { encodeFn = wrapped.encode }
     func encode(to encoder: Encoder) throws { try encodeFn(encoder) }
+}
+
+// MARK: - Events (task 1.4 API)
+
+struct MTEvent: Codable, Identifiable {
+    let id: String
+    let calendarId: String
+    let title: String
+    let startsAt: String
+    let endsAt: String?
+    let allDay: Bool
+    let repeatRule: String
+    let labelColor: String?
+    let location: String?
+    let url: String?
+    let note: String?
+}
+
+struct EventResponse: Codable { let event: MTEvent }
+struct EventListResponse: Codable { let events: [MTEvent] }
+
+extension APIClient {
+    func listEvents(calendarId: String, from: Date, to: Date) async throws -> [MTEvent] {
+        let iso = ISO8601DateFormatter()
+        let res: EventListResponse = try await request(
+            "GET",
+            "/v1/calendars/\(calendarId)/events?from=\(iso.string(from: from))&to=\(iso.string(from: to))"
+        )
+        return res.events
+    }
+
+    func createEvent(calendarId: String, title: String, startsAt: Date, allDay: Bool, repeatRule: String, labelColor: String, location: String?, note: String?) async throws -> MTEvent {
+        struct Payload: Encodable {
+            let title: String
+            let startsAt: String
+            let allDay: Bool
+            let repeatRule: String
+            let labelColor: String
+            let location: String?
+            let note: String?
+        }
+        let iso = ISO8601DateFormatter()
+        let res: EventResponse = try await request(
+            "POST", "/v1/calendars/\(calendarId)/events",
+            body: Payload(title: title, startsAt: iso.string(from: startsAt), allDay: allDay, repeatRule: repeatRule, labelColor: labelColor, location: location, note: note)
+        )
+        return res.event
+    }
+
+    func deleteEvent(calendarId: String, eventId: String) async throws {
+        struct Empty: Encodable {}
+        let _: EmptyResponse = try await request("DELETE", "/v1/calendars/\(calendarId)/events/\(eventId)", body: Optional<Empty>.none)
+    }
+}
+
+func parseISODate(_ s: String) -> Date? {
+    let f = ISO8601DateFormatter()
+    f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    if let d = f.date(from: s) { return d }
+    f.formatOptions = [.withInternetDateTime]
+    return f.date(from: s)
 }
