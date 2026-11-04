@@ -41,12 +41,32 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         # DEVELOPMENT_TEAM comes from CI secrets at archive time.
 
+  MangoTimeUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: MangoTimeUITests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mangotime.app.uitests
+        SWIFT_VERSION: "5.0"
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: MangoTime
+    dependencies:
+      - target: MangoTime
+
 schemes:
   MangoTime:
     build:
       targets:
         MangoTime: all
+        MangoTimeUITests: [test]
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - MangoTimeUITests
     archive:
       config: Release

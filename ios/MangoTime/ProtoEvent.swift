@@ -30,6 +30,7 @@ struct ProtoEventForm: View {
                 .font(.title3).bold()
                 .padding(.vertical, 12)
                 .overlay(Divider(), alignment: .bottom)
+                .accessibilityIdentifier("event_title")
             PRow(label: "📅 行事曆", value: "家庭日曆") { s.note("揀行事曆（mock）") }
             PRow(label: "📄 儲存為備忘錄", toggle: $saveAsMemo)
             Button { showLabels.toggle() } label: {

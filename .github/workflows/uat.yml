@@ -1,0 +1,51 @@
+name: uat
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "ios/**"
+
+jobs:
+  uitest:
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install xcodegen
+        run: |
+          cd /tmp
+          curl -sL -o xcodegen.zip https://github.com/yonaskolb/XcodeGen/releases/download/2.46.0/xcodegen.zip
+          unzip -oq xcodegen.zip -d xg
+          echo "/tmp/xg/xcodegen/bin" >> $GITHUB_PATH
+
+      - name: Generate project
+        run: cd ios && xcodegen generate
+
+      - name: Resolve simulator
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin); out=''; [out := dev['udid'] for rt,devs in d['devices'].items() if 'iOS' in rt for dev in devs if dev['name'].startswith('iPhone')]; print(out)" | head -1)
+          echo "udid=$UDID" >> $GITHUB_OUTPUT
+          xcrun simctl boot "$UDID" || true
+
+      - name: Run UI tests (真撳真打 vs production server)
+        run: |
+          cd ios
+          xcodebuild test -project MangoTime.xcodeproj -scheme MangoTime \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath /tmp/dd \
+            -only-testing:MangoTimeUITests 2>&1 | tee /tmp/uat.log | tail -30
+
+      - name: UAT report
+        if: always()
+        run: grep -E "Test Suite|Test Case|passed|failed|error:" /tmp/uat.log | tail -25
+
+      - name: Upload UAT log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uat-log
+          path: /tmp/uat.log
+          retention-days: 7

@@ -260,10 +260,13 @@ struct ProtoLoginView: View {
             Text("一齊夾時間，一家人一個曆").font(.subheadline).foregroundStyle(PT.soft)
             if registerMode {
                 TextField("名稱", text: $name).textFieldStyle(.roundedBorder)
+                    .accessibilityIdentifier("reg_name")
             }
             TextField("電郵", text: $email).textFieldStyle(.roundedBorder).keyboardType(.emailAddress)
                 .textInputAutocapitalization(.never).autocorrectionDisabled()
+                .accessibilityIdentifier("login_email")
             SecureField("密碼", text: $password).textFieldStyle(.roundedBorder)
+                .accessibilityIdentifier("login_password")
             if let err = s.loginError {
                 Text(err).font(.caption).foregroundStyle(.red)
             }

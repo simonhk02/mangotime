@@ -244,6 +244,7 @@ struct ProtoCalendarList: View {
             .padding(.top, 8)
             HStack {
                 TextField("新行事曆名稱", text: $newName).textFieldStyle(.roundedBorder)
+                    .accessibilityIdentifier("cal_new_name")
                 Button {
                     let name = newName.trimmingCharacters(in: .whitespaces)
                     guard !name.isEmpty else { return }
@@ -254,6 +255,7 @@ struct ProtoCalendarList: View {
                         .padding(.horizontal, 14).padding(.vertical, 8)
                         .background(PT.orange).clipShape(RoundedRectangle(cornerRadius: 8))
                 }
+                .accessibilityIdentifier("cal_create_btn")
             }
             .padding(.top, 12)
             Divider().padding(.vertical, 10)
