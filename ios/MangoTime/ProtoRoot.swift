@@ -30,6 +30,7 @@ enum ProtoScreen: Hashable {
     case feed, notices, other, profile
     case memos, memosEmpty, memoDetail(MockMemo), liveMemoDetail(MTMemo)
     case todos, album, members, invite
+    case extSubscribe
     case settings, displaySettings, filterSettings, displayCalendar, notifSettings
     case noticeBoard, noticeDetail
     case premium, premiumDetail
@@ -54,6 +55,7 @@ final class ProtoState: ObservableObject {
     @Published var loginError: String?
     @Published var liveMembers: [MTMember] = []
     @Published var inviteCode: String?
+    @Published var liveExternalEvents: [MTExternalEvent] = []
 
     @MainActor
     func loadMembers() async {
@@ -91,6 +93,7 @@ final class ProtoState: ObservableObject {
                 let from = cal.date(from: comps)!
                 let to = cal.date(byAdding: .month, value: 1, to: from)!
                 liveEvents = try await api.listEvents(calendarId: calId, from: from, to: to)
+                liveExternalEvents = (try? await api.listExternalEvents(calendarId: calId)) ?? []
             }
         } catch {
             note("載入失敗：\(error.localizedDescription)")
@@ -503,6 +506,7 @@ struct ProtoContent: View {
             case .album: ProtoAlbum()
             case .members: ProtoMembers()
             case .invite: ProtoInvite()
+            case .extSubscribe: ProtoExtSubscribe()
             case .settings: ProtoSettings()
             case .displaySettings: ProtoDisplaySettings()
             case .filterSettings: ProtoFilterSettings()

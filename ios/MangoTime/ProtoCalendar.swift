@@ -102,7 +102,7 @@ struct ProtoMonthScreen: View {
         guard !cell.other else { return [] }
         if s.api != nil {
             // LIVE：repeatRule 展開（同 web 版邏輯）
-            return s.liveEvents.compactMap { ev in
+            var out = s.liveEvents.compactMap { ev -> DisplayEvent? in
                 guard let start = parseISODate(ev.startsAt) else { return nil }
                 let sameDay = cal.isDate(start, inSameDayAs: cell.date)
                 var show = sameDay
@@ -117,6 +117,24 @@ struct ProtoMonthScreen: View {
                 }
                 return show ? DisplayEvent(id: ev.id, title: ev.title, color: labelColor(ev.labelColor), attach: 0, mock: nil, live: ev) : nil
             }
+            // 5.1 外部日曆活動（唯讀，灰色顯示）
+            for ext in s.liveExternalEvents {
+                guard let start = parseISODate(ext.startsAt) else { continue }
+                var show = cal.isDate(start, inSameDayAs: cell.date)
+                if !show && ext.repeatRule != "none" && start <= cell.date {
+                    switch ext.repeatRule {
+                    case "daily": show = true
+                    case "weekly": show = cal.component(.weekday, from: start) == cal.component(.weekday, from: cell.date)
+                    case "monthly": show = cal.component(.day, from: start) == cal.component(.day, from: cell.date)
+                    case "yearly": show = cal.component(.day, from: start) == cal.component(.day, from: cell.date) && cal.component(.month, from: start) == cal.component(.month, from: cell.date)
+                    default: break
+                    }
+                }
+                if show {
+                    out.append(DisplayEvent(id: ext.id, title: ext.title, color: PT.soft, attach: 0, mock: nil, live: nil))
+                }
+            }
+            return out
         }
         let d = cal.component(.day, from: cell.date)
         return Mock.events.filter { $0.day == d }.map {

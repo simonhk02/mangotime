@@ -280,12 +280,72 @@ struct ProtoOther: View {
                     PRow(icon: "checkmark.square", label: "待辦清單") { s.screen = .todos }
                     PRow(icon: "photo.on.rectangle", label: "相簿") { s.screen = .album }
                     PRow(icon: "person.2", label: "成員") { s.screen = .members }
+                    PRow(icon: "link", label: "訂閱外部日曆") { s.screen = .extSubscribe }
                     PRow(icon: "gearshape", label: "App 設定") { s.screen = .settings }
                     PRow(icon: "megaphone", label: "公告") { s.screen = .noticeBoard }
                     PRow(icon: "book", label: "MangoTime 使用手冊") { s.screen = .userGuide }
                     PRow(icon: "questionmark.circle", label: "使用方法") { s.screen = .helpHome }
                 }
                 .padding(.horizontal, 16)
+            }
+        }
+    }
+}
+
+/// 訂閱外部日曆（task 5.1）：貼 .ics 連結
+struct ProtoExtSubscribe: View {
+    @EnvironmentObject var s: ProtoState
+    @State private var url = ""
+    @State private var name = ""
+    @State private var busy = false
+    @State private var externals: [MTExternal] = []
+
+    var body: some View {
+        PSheet(title: "訂閱外部日曆", onBack: { s.screen = .other }) {
+            // content
+            if s.api == nil {
+                Text("貼上 Google 日曆／Apple 日曆嘅 .ics 連結，對方嘅活動就會以唯讀方式顯示喺你嘅月曆。")
+                    .font(.caption).foregroundStyle(PT.soft)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 12)
+                PRow(icon: "link", label: "學校校曆", value: "已訂閱") { s.note("取消訂閱（mock）") }
+                PRow(icon: "link", label: "波場訂場", value: "已訂閱") { s.note("取消訂閱（mock）") }
+            } else {
+                Text("貼上 Google 日曆（設定→日曆→整合日曆→秘密地址）或 Apple 日曆（發佈日曆）嘅 .ics 連結。")
+                    .font(.caption).foregroundStyle(PT.soft)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 12)
+                if externals.isEmpty {
+                    Text("仲未訂閱任何外部日曆").font(.caption).foregroundStyle(PT.soft).padding(.top, 8)
+                }
+                ForEach(externals) { e in
+                    PRow(icon: "link", label: e.name, value: "已訂閱") { }
+                }
+            }
+        } bottom: {
+            if s.api != nil {
+                HStack {
+                    TextField("https://…/basic.ics", text: $url)
+                        .textFieldStyle(.roundedBorder)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .accessibilityIdentifier("ext_url")
+                    Button {
+                        let u = url.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !u.isEmpty, !busy, let calId = s.activeCalendarId else { return }
+                        busy = true
+                        Task {
+                            defer { busy = false }
+                            if (try? await s.api?.subscribeExternal(calendarId: calId, url: u, name: name.isEmpty ? nil : name)) != nil {
+                                url = ""
+                                s.note("已訂閱 ✓")
+                            } else {
+                                s.note("訂閱失敗——條 link 攞唔到嘢")
+                            }
+                        }
+                    } label: { Text(busy ? "…" : "訂閱").bold().foregroundStyle(PT.orange) }
+                }
             }
         }
     }

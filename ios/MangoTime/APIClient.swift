@@ -450,6 +450,37 @@ extension APIClient {
         struct Res: Codable { let attachment: MTAttachment }
         let _: Res = try await request("POST", "/v1/events/\(eventId)/attachments", body: Req(data: data.base64EncodedString(), mimeType: mimeType))
     }
+    // 5.1 外曆訂閱
+    func subscribeExternal(calendarId: String, url: String, name: String?) async throws {
+        struct Req: Encodable { let url: String; let name: String? }
+        struct Res: Codable { let external: MTExternal }
+        let _: Res = try await request("POST", "/v1/calendars/\(calendarId)/externals", body: Req(url: url, name: name))
+    }
+    func listExternalEvents(calendarId: String) async throws -> [MTExternalEvent] {
+        struct Res: Codable { let events: [MTExternalEvent] }
+        let res: Res = try await request("GET", "/v1/calendars/\(calendarId)/externals/events")
+        return res.events
+    }
+}
+
+// MARK: - External calendars (task 5.1)
+
+struct MTExternal: Codable, Identifiable {
+    let id: String
+    let url: String
+    let name: String
+}
+
+struct MTExternalEvent: Codable, Identifiable, Hashable {
+    var id: String { uid + externalId }
+    let uid: String
+    let title: String
+    let startsAt: String
+    let endsAt: String?
+    let allDay: Bool
+    let repeatRule: String
+    let sourceName: String
+    let externalId: String
 }
 
 struct MTNotice: Codable, Identifiable, Hashable {
