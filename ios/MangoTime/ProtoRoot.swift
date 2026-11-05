@@ -1,5 +1,6 @@
 import SwiftUI
 import AuthenticationServices
+import WidgetKit
 
 /// ASWebAuthenticationSession 要個 presentation anchor
 final class GoogleAuthContext: NSObject, ASWebAuthenticationPresentationContextProviding {
@@ -95,9 +96,43 @@ final class ProtoState: ObservableObject {
                 let to = cal.date(byAdding: .month, value: 1, to: from)!
                 liveEvents = try await api.listEvents(calendarId: calId, from: from, to: to)
                 liveExternalEvents = (try? await api.listExternalEvents(calendarId: calId)) ?? []
+                syncWidget()
             }
         } catch {
             note("載入失敗：\(error.localizedDescription)")
+        }
+    }
+
+    /// Widget 快取：今日活動寫落 App Group（widget 15 分鐘讀一次）
+    @MainActor
+    func syncWidget() {
+        let cal = Calendar(identifier: .gregorian)
+        let todayEvents = liveEvents.compactMap { ev -> [String: String]? in
+            guard let start = parseISODate(ev.startsAt), cal.isDateInToday(start) else { return nil }
+            let timeStr: String
+            if ev.allDay { timeStr = "全日" } else {
+                let f = DateFormatter(); f.dateFormat = "HH:mm"; timeStr = f.string(from: start)
+            }
+            return ["id": ev.id, "title": ev.title, "time": timeStr, "colorHex": colorHex(ev.labelColor)]
+        }
+        let snap: [String: Any] = [
+            "calendarName": liveCalendars.first(where: { $0.id == activeCalendarId })?.name ?? "MangoTime",
+            "events": todayEvents,
+            "updatedAt": Date().timeIntervalSince1970,
+        ]
+        if let data = try? JSONSerialization.data(withJSONObject: snap) {
+            UserDefaults(suiteName: "group.com.mangotime.app")?.set(data, forKey: "widget_today")
+        }
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    private func colorHex(_ key: String?) -> String {
+        switch key {
+        case "emerald": return "#10B981"
+        case "blue": return "#3B82F6"
+        case "red": return "#EF4444"
+        case "purple": return "#A855F7"
+        default: return "#FF7043"
         }
     }
 
