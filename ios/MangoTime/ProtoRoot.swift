@@ -516,7 +516,7 @@ struct ProtoTabBar: View {
             tab("line.3.horizontal", "其他", .other, s.screen == .other, "tab_other")
         }
         .padding(.top, 6).padding(.bottom, 4)
-        .background(Color(.systemBackground).shadow(radius: 2))
+        .background(.bar)
     }
 }
 
@@ -528,7 +528,7 @@ struct ProtoContent: View {
         }
         .id(s.screen)
         .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
-        .animation(.easeInOut(duration: 0.22), value: s.screen)
+        .animation(.spring(response: 0.32, dampingFraction: 0.86), value: s.screen)
     }
 
     @ViewBuilder

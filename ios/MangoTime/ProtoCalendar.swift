@@ -39,33 +39,47 @@ struct ProtoMonthScreen: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            PNavBar("\(cal.component(.year, from: s.displayMonth))年\(cal.component(.month, from: s.displayMonth))月", left: {
-                Button { s.screen = .calendarList } label: {
-                    Text("\(s.api != nil ? (s.liveCalendars.first(where: { $0.id == s.activeCalendarId })?.name ?? "行事曆") : "家庭日曆") ▾").font(.subheadline).foregroundStyle(PT.orange)
-                }
-            }, right: {
-                HStack(spacing: 14) {
-                    Button { shiftMonth(-1) } label: { Image(systemName: "chevron.left").foregroundStyle(PT.orange) }
-                    Button { s.displayMonth = Date() } label: { Text("今日").font(.caption).foregroundStyle(PT.orange) }
-                    Button { shiftMonth(1) } label: { Image(systemName: "chevron.right").foregroundStyle(PT.orange) }
-                    Button { s.screen = .search } label: { Image(systemName: "magnifyingglass").foregroundStyle(PT.orange) }
-                }
-            })
-            Button { s.screen = .premiumDetail } label: {
-                HStack {
-                    Label("MangoTime Premium", systemImage: "star.fill").font(.caption).bold()
+            // Apple 式大標題區：左對齊大Title + 行事曆揀選 + 操作
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("\(cal.component(.year, from: s.displayMonth))年\(cal.component(.month, from: s.displayMonth))月")
+                        .font(.system(size: 30, weight: .bold))
                     Spacer()
-                    Text("無廣告・上傳檔案 ›").font(.caption).foregroundStyle(PT.soft)
+                    Button { s.screen = .search } label: {
+                        Image(systemName: "magnifyingglass").font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(PT.orange)
+                            .frame(width: 34, height: 34)
+                            .background(PT.orange.opacity(0.1)).clipShape(Circle())
+                    }
                 }
-                .padding(.horizontal, 14).padding(.vertical, 8)
-                .background(Color(.secondarySystemBackground))
+                HStack(spacing: 8) {
+                    Button { s.screen = .calendarList } label: {
+                        HStack(spacing: 5) {
+                            Text(s.api != nil ? (s.liveCalendars.first(where: { $0.id == s.activeCalendarId })?.name ?? "行事曆") : "家庭日曆")
+                                .font(.subheadline).bold()
+                            Image(systemName: "chevron.down").font(.system(size: 9, weight: .bold))
+                        }
+                        .foregroundStyle(PT.orange)
+                        .padding(.horizontal, 12).padding(.vertical, 7)
+                        .background(PT.orange.opacity(0.1)).clipShape(Capsule())
+                    }
+                    Spacer()
+                    HStack(spacing: 2) {
+                        Button { shiftMonth(-1) } label: { Image(systemName: "chevron.left").font(.system(size: 13, weight: .semibold)).foregroundStyle(PT.orange).frame(width: 30, height: 30) }
+                        Button { s.displayMonth = Date() } label: { Text("今日").font(.footnote).foregroundStyle(PT.orange).frame(width: 38, height: 30) }
+                        Button { shiftMonth(1) } label: { Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(PT.orange).frame(width: 30, height: 30) }
+                    }
+                    .background(Color(.secondarySystemBackground))
+                    .clipShape(Capsule())
+                }
             }
-            .buttonStyle(.plain)
+            .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 10)
+            .background(.bar)
             Picker("", selection: Binding(get: { s.screen == .weekly ? 1 : 0 }, set: { s.screen = $0 == 1 ? .weekly : .month })) {
                 Text("月曆").tag(0); Text("週曆").tag(1)
             }
             .pickerStyle(.segmented)
-            .padding(.horizontal, 14).padding(.vertical, 6)
+            .padding(.horizontal, 16).padding(.vertical, 8)
 
             if s.screen == .month {
                 ScrollView {
@@ -171,41 +185,47 @@ struct ProtoMonthScreen: View {
                             else if let mock = first.mock { s.screen = .eventDetail(mock) }
                         } else { s.screen = .create }
                     } label: {
-                        VStack(spacing: 1) {
-                            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                                Text("\(cal.component(.day, from: cell.date))")
-                                    .font(.system(size: 13, weight: isToday ? .bold : .medium))
-                                    .foregroundStyle(isToday ? PT.orange : .primary)
+                        VStack(spacing: 2) {
+                            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                                ZStack {
+                                    if isToday {
+                                        Circle().fill(PT.orange).frame(width: 22, height: 22)
+                                    }
+                                    Text("\(cal.component(.day, from: cell.date))")
+                                        .font(.system(size: 13, weight: isToday ? .bold : .medium))
+                                        .foregroundStyle(isToday ? .white : .primary)
+                                }
                                 if s.lunarOn {
                                     Text(Lunar.short(cell.date))
                                         .font(.system(size: 7))
                                         .foregroundStyle(PT.soft)
                                 }
                             }
+                            .frame(maxWidth: .infinity, alignment: .leading)
                             ForEach(evs.prefix(2)) { ev in
                                 Text(ev.title)
-                                    .font(.system(size: 8))
+                                    .font(.system(size: 8, weight: .medium))
                                     .lineLimit(1)
-                                    .padding(.horizontal, 3).padding(.vertical, 1)
+                                    .padding(.horizontal, 4).padding(.vertical, 1.5)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .background(ev.color)
                                     .foregroundStyle(.white)
-                                    .clipShape(RoundedRectangle(cornerRadius: 3))
+                                    .clipShape(Capsule())
                             }
                             if evs.count > 2 {
-                                Text("+\(evs.count - 2) more")
-                                    .font(.system(size: 7))
+                                Text("+\(evs.count - 2)")
+                                    .font(.system(size: 7, weight: .medium))
                                     .foregroundStyle(PT.soft)
                                     .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.horizontal, 3)
+                                    .padding(.horizontal, 4)
                             }
                             Spacer(minLength: 0)
                         }
-                        .padding(.top, 3).padding(.horizontal, 2)
-                        .frame(maxWidth: .infinity, minHeight: 68, alignment: .top)
-                        .background(isToday ? PT.orange.opacity(0.08) : Color(.systemBackground))
-                        .overlay(Rectangle().stroke(Color(.separator).opacity(0.4), lineWidth: 0.4))
-                        .opacity(cell.other ? 0.35 : 1)
+                        .padding(.top, 4).padding(.horizontal, 3)
+                        .frame(maxWidth: .infinity, minHeight: 72, alignment: .top)
+                        .background(Color(.systemBackground))
+                        .overlay(Rectangle().stroke(Color(.separator).opacity(0.25), lineWidth: 0.3))
+                        .opacity(cell.other ? 0.3 : 1)
                     }
                     .buttonStyle(.plain)
                 }
