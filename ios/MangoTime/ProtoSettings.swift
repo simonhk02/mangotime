@@ -86,14 +86,35 @@ struct ProtoDisplayCalendar: View {
 
 struct ProtoFilterSettings: View {
     @EnvironmentObject var s: ProtoState
+    private let labelOptions: [(key: String, name: String, color: Color)] = [
+        ("bright-orange", "Bright Orange", PT.orange),
+        ("emerald", "Emerald Green", PT.green),
+        ("blue", "Blue", PT.blue),
+        ("red", "Red", PT.red),
+        ("purple", "Purple", PT.purple),
+    ]
     var body: some View {
         PSheet(title: "篩選設定", onBack: { s.screen = .settings }) {
-            Text("指定行程參加者或標籤，即可篩選。").font(.caption).foregroundStyle(PT.soft)
+            Text("揀咗嘅標籤先會顯示喺月曆（全部唔揀 = 全部顯示）").font(.caption).foregroundStyle(PT.soft)
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 8)
-            PRow(icon: "person.2", label: "參加者", value: "全部") { s.note("揀參加者（mock）") }
-            PRow(icon: "tag", label: "標籤", value: "全部") { s.note("揀標籤（mock）") }
-            Button { s.note("已套用（mock）"); s.screen = .settings } label: {
-                Text("套用").bold().foregroundStyle(.white)
+            ForEach(labelOptions, id: \.key) { opt in
+                Button {
+                    if s.filterLabels.contains(opt.key) { s.filterLabels.remove(opt.key) }
+                    else { s.filterLabels.insert(opt.key) }
+                } label: {
+                    HStack(spacing: 10) {
+                        Circle().fill(opt.color).frame(width: 12, height: 12)
+                        Text(opt.name).foregroundStyle(.primary)
+                        Spacer()
+                        if s.filterLabels.contains(opt.key) { Image(systemName: "checkmark").foregroundStyle(PT.orange) }
+                    }
+                    .padding(.vertical, 10)
+                }
+                .buttonStyle(.plain)
+                .overlay(Divider().opacity(0.5), alignment: .bottom)
+            }
+            Button { s.filterLabels = []; s.screen = .settings } label: {
+                Text("清除篩選").bold().foregroundStyle(.white)
                     .frame(maxWidth: .infinity).padding(.vertical, 12)
                     .background(PT.orange).clipShape(RoundedRectangle(cornerRadius: 10))
             }

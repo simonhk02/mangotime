@@ -109,8 +109,9 @@ struct ProtoMonthScreen: View {
     private func eventsFor(_ cell: DayCell) -> [DisplayEvent] {
         guard !cell.other else { return [] }
         if s.api != nil {
-            // LIVE：repeatRule 展開（同 web 版邏輯）
+            // LIVE：repeatRule 展開（同 web 版邏輯）+ 篩選（揀咗 label 先至顯示）
             var out = s.liveEvents.compactMap { ev -> DisplayEvent? in
+                if !s.filterLabels.isEmpty && !s.filterLabels.contains(ev.labelColor ?? "bright-orange") { return nil }
                 guard let start = parseISODate(ev.startsAt) else { return nil }
                 let sameDay = cal.isDate(start, inSameDayAs: cell.date)
                 var show = sameDay

@@ -58,6 +58,10 @@ final class ProtoState: ObservableObject {
     @Published var inviteCode: String?
     @Published var liveExternalEvents: [MTExternalEvent] = []
     @Published var displayMonth = Date() // 月曆而家顯示緊邊個月（‹ › 導航）
+    // 篩選：空 set = 全部顯示；有值 = 淨顯示嗰啲 label 色
+    @Published var filterLabels: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "filter_labels") ?? []) {
+        didSet { UserDefaults.standard.set(Array(filterLabels), forKey: "filter_labels") }
+    }
 
     @MainActor
     func loadMembers() async {
