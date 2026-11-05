@@ -42,6 +42,8 @@ jobs:
           UDID="${{ steps.sim.outputs.udid }}"
           APP=$(find /tmp/dd/Build/Products/Debug-iphonesimulator -name "MangoTime.app" -maxdepth 1)
           OUT=/tmp/shots; mkdir -p "$OUT"
+          # widget extension 冇簽名裝唔落模擬器——screenshots 唔需要 widget，剝走 PlugIns
+          rm -rf "$APP/PlugIns"
           xcrun simctl install "$UDID" "$APP"
           shoot() {
             outfile="$1"; scr="$2"; shift 2
