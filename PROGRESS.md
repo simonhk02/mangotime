@@ -34,3 +34,4 @@
 | 5.4 | 檔案附件 | 🟨 待驗收 | Attachment model + base64 上傳/攞檔/刪除（57/57 tests，VPS live）；iOS 詳情頁 📎 附件區：PhotosPicker 加相 + 縮圖橫列；PDF 都收 | |
 | 5.5 | iCal import/export | 🟨 待驗收 | export.ics（RFC escape，round-trip test 過）+ import（上限 500 個）；production 實測 export 出真 ics；iOS 訂閱頁加「匯出（share sheet）/匯入（fileImporter）」（70/70 tests） | |
 | 5.6 | APNs 推送 | 🟨 待驗收 | 全鏈通：ASC capability + Device API + outbox→push（ES256+http2）+ iOS 註冊。**key 搵返**：VPS `/opt/ledger-ai-mobile-pilot/secrets/AuthKey_F85H2JYDZN.p8`（team 共用，Apple 認證 JWT 通過）；production 實測 APNs 回 BadDeviceToken（= key 有效）。等你手機 TestFlight 註冊 device token 就有真推送 | |
+| 5.7 | iOS Widget | 🟨 待驗收 | home screen widget「今日活動」（small/medium）；widget bundle id + App Groups 喺 ASC 開好；app 每次 loadLive 寫快取入 group，widget 15 分鐘自動 refresh | |
