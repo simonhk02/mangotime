@@ -468,6 +468,12 @@ extension APIClient {
         let res: Res = try await request("POST", "/v1/calendars/\(calendarId)/scan", body: Req(data: data.base64EncodedString(), mimeType: mimeType))
         return res.events
     }
+    // APNs：註冊 device token
+    func registerDevice(token: String) async throws {
+        struct Req: Encodable { let token: String; let platform: String }
+        struct Res: Codable { let ok: Bool }
+        let _: Res = try await request("POST", "/v1/devices", body: Req(token: token, platform: "ios"))
+    }
     // 5.5 iCal
     func exportIcs(calendarId: String) async throws -> Data {
         guard let token else { throw APIError.http(401, "未登入") }

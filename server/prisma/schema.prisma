@@ -27,6 +27,7 @@ model User {
   apiKeys          ApiKey[]
   attachments      Attachment[]
   socialAccounts   SocialAccount[]
+  devices          Device[]
 }
 
 // Social auth（Apple / Google）：一個 user 可以 link 多個 provider
@@ -255,6 +256,18 @@ model Attachment {
   createdAt  DateTime @default(now())
 
   @@index([eventId])
+}
+
+// APNs 推送：每部裝置一個 token
+model Device {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  platform  String   @default("ios")
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 // Task 4.2 — Webhook 訂閱（每個行事曆可有多條；dispatcher 讀 OutboxEvent 派遞）

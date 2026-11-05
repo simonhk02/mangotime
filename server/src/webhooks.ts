@@ -3,6 +3,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { PrismaClient, User } from "@prisma/client";
 import { userFromRequest } from "./auth.js";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { dispatchPush } from "./push.js";
 
 async function requireUser(prisma: PrismaClient, req: FastifyRequest, reply: FastifyReply): Promise<User | null> {
   const user = await userFromRequest(prisma, req);
@@ -75,6 +76,10 @@ export async function dispatchOnce(prisma: PrismaClient) {
     take: 50,
   });
   for (const ev of pending) {
+    // APNs 推送（冇設 key 會自己 skip）
+    await dispatchPush(prisma, ev.type, ev.aggregateId, JSON.parse(ev.payload) as Record<string, unknown>).catch((err) => {
+      console.warn("push failed:", err instanceof Error ? err.message : err);
+    });
     const hooks = await prisma.webhook.findMany({
       where: { calendarId: ev.aggregateId, active: true },
     });
