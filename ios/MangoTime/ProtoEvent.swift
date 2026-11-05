@@ -120,7 +120,12 @@ struct ProtoEventForm: View {
                             s.screen = .month
                         }
                     } else {
-                        Task { await s.createLiveEvent(title: t, date: date, allDay: allDay, labelColor: labelKeys[labelIdx], location: loc.isEmpty ? nil : loc, noteText: noteText.isEmpty ? nil : noteText, repeatRule: repeatRule) }
+                        Task {
+                            if saveAsMemo, let calId = s.activeCalendarId {
+                                _ = try? await s.api?.createMemo(calendarId: calId, title: t, body: noteText)
+                            }
+                            await s.createLiveEvent(title: t, date: date, allDay: allDay, labelColor: labelKeys[labelIdx], location: loc.isEmpty ? nil : loc, noteText: noteText.isEmpty ? nil : noteText, repeatRule: repeatRule)
+                        }
                     }
                 } else {
                     s.note("已保存（mock）"); s.screen = .month

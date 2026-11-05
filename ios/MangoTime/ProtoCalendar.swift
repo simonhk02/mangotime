@@ -39,14 +39,16 @@ struct ProtoMonthScreen: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            PNavBar("\(cal.component(.year, from: today))年\(cal.component(.month, from: today))月 ～", left: {
+            PNavBar("\(cal.component(.year, from: s.displayMonth))年\(cal.component(.month, from: s.displayMonth))月", left: {
                 Button { s.screen = .calendarList } label: {
                     Text("\(s.api != nil ? (s.liveCalendars.first(where: { $0.id == s.activeCalendarId })?.name ?? "行事曆") : "家庭日曆") ▾").font(.subheadline).foregroundStyle(PT.orange)
                 }
             }, right: {
                 HStack(spacing: 14) {
+                    Button { shiftMonth(-1) } label: { Image(systemName: "chevron.left").foregroundStyle(PT.orange) }
+                    Button { s.displayMonth = Date() } label: { Text("今日").font(.caption).foregroundStyle(PT.orange) }
+                    Button { shiftMonth(1) } label: { Image(systemName: "chevron.right").foregroundStyle(PT.orange) }
                     Button { s.screen = .search } label: { Image(systemName: "magnifyingglass").foregroundStyle(PT.orange) }
-                    Button { s.screen = .monthPicker } label: { Image(systemName: "calendar").foregroundStyle(PT.orange) }
                 }
             })
             Button { s.screen = .premiumDetail } label: {
@@ -76,6 +78,12 @@ struct ProtoMonthScreen: View {
 
     private var weekdays: [String] {
         s.weekStartMonday ? Array(wd[1...6]) + [wd[0]] : wd
+    }
+
+    private func shiftMonth(_ delta: Int) {
+        let cal = Calendar(identifier: .gregorian)
+        s.displayMonth = cal.date(byAdding: .month, value: delta, to: s.displayMonth) ?? s.displayMonth
+        if s.api != nil { Task { await s.loadLive(month: s.displayMonth) } }
     }
 
     struct DisplayEvent: Identifiable {
@@ -143,7 +151,7 @@ struct ProtoMonthScreen: View {
     }
 
     private var monthGrid: some View {
-        let cells = monthCells(base: today, weekStartMonday: s.weekStartMonday)
+        let cells = monthCells(base: s.displayMonth, weekStartMonday: s.weekStartMonday)
         return VStack(spacing: 0) {
             HStack(spacing: 0) {
                 ForEach(weekdays, id: \.self) { w in
@@ -233,8 +241,8 @@ struct ProtoMonthScreen: View {
     }
 
     private var weekView: some View {
-        let cells = monthCells(base: today, weekStartMonday: s.weekStartMonday)
-        let startOfWeek = cal.dateInterval(of: .weekOfYear, for: today)!.start
+        let cells = monthCells(base: s.displayMonth, weekStartMonday: s.weekStartMonday)
+        let startOfWeek = cal.dateInterval(of: .weekOfYear, for: s.displayMonth)!.start
         let week = cells.filter { cal.isDate($0.date, equalTo: startOfWeek, toGranularity: .weekOfYear) }
         return ScrollView([.vertical, .horizontal], showsIndicators: false) {
             HStack(alignment: .top, spacing: 0) {
@@ -420,11 +428,20 @@ struct ProtoMonthPicker: View {
             .padding(.top, 8)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 12) {
                 ForEach(1...12, id: \.self) { m in
-                    Button { s.note("跳去 \(m) 月（mock）"); s.screen = .month } label: {
+                    Button {
+                        var comps = Calendar(identifier: .gregorian).dateComponents([.year, .month], from: s.displayMonth)
+                        comps.month = m
+                        comps.day = 1
+                        if let d = Calendar(identifier: .gregorian).date(from: comps) {
+                            s.displayMonth = d
+                            if s.api != nil { Task { await s.loadLive(month: d) } }
+                        }
+                        s.screen = .month
+                    } label: {
                         Text("\(m)月")
                             .padding(.vertical, 10).frame(maxWidth: .infinity)
-                            .background(m == 11 ? PT.orange.opacity(0.15) : Color(.secondarySystemBackground))
-                            .foregroundStyle(m == 11 ? PT.orange : .primary)
+                            .background(m == Calendar(identifier: .gregorian).component(.month, from: s.displayMonth) ? PT.orange.opacity(0.15) : Color(.secondarySystemBackground))
+                            .foregroundStyle(m == Calendar(identifier: .gregorian).component(.month, from: s.displayMonth) ? PT.orange : .primary)
                             .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                 }

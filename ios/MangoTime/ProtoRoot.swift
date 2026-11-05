@@ -56,6 +56,7 @@ final class ProtoState: ObservableObject {
     @Published var liveMembers: [MTMember] = []
     @Published var inviteCode: String?
     @Published var liveExternalEvents: [MTExternalEvent] = []
+    @Published var displayMonth = Date() // 月曆而家顯示緊邊個月（‹ › 導航）
 
     @MainActor
     func loadMembers() async {
@@ -82,14 +83,14 @@ final class ProtoState: ObservableObject {
     }
 
     @MainActor
-    func loadLive() async {
+    func loadLive(month: Date? = nil) async {
         guard let api else { return }
         do {
             liveCalendars = try await api.listCalendars()
             if activeCalendarId == nil { activeCalendarId = liveCalendars.first?.id }
             if let calId = activeCalendarId {
                 let cal = Calendar(identifier: .gregorian)
-                let comps = cal.dateComponents([.year, .month], from: Date())
+                let comps = cal.dateComponents([.year, .month], from: month ?? displayMonth)
                 let from = cal.date(from: comps)!
                 let to = cal.date(byAdding: .month, value: 1, to: from)!
                 liveEvents = try await api.listEvents(calendarId: calId, from: from, to: to)

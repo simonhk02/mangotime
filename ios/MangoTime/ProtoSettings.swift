@@ -104,13 +104,16 @@ struct ProtoFilterSettings: View {
 
 struct ProtoNotifSettings: View {
     @EnvironmentObject var s: ProtoState
+    @AppStorage("notif_invite") private var notifInvite = true
+    @AppStorage("notif_new_event") private var notifNewEvent = true
+    @AppStorage("notif_comment") private var notifComment = true
     var body: some View {
         PSheet(title: "通知設定", onBack: { s.screen = .settings }) {
-            PRow(label: "邀請", toggle: .constant(true))
-            PRow(label: "新活動", toggle: .constant(true))
-            PRow(label: "留言", toggle: .constant(true))
-            PRow(label: "活動開始前", value: "1 小時前") { s.note("提醒時間（mock）") }
-            PRow(label: "每日通知時間", value: "09:00") { s.note("通知時間（mock）") }
+            PRow(label: "邀請", toggle: $notifInvite)
+            PRow(label: "新活動", toggle: $notifNewEvent)
+            PRow(label: "留言", toggle: $notifComment)
+            PRow(label: "活動開始前", value: "1 小時前") { s.note("提醒時間（推送功能做緊）") }
+            PRow(label: "每日通知時間", value: "09:00") { s.note("通知時間（推送功能做緊）") }
         }
     }
 }
