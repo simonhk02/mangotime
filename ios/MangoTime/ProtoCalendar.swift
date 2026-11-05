@@ -183,6 +183,13 @@ struct ProtoMonthScreen: View {
                                     .foregroundStyle(.white)
                                     .clipShape(RoundedRectangle(cornerRadius: 3))
                             }
+                            if evs.count > 2 {
+                                Text("+\(evs.count - 2) more")
+                                    .font(.system(size: 7))
+                                    .foregroundStyle(PT.soft)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.horizontal, 3)
+                            }
                             Spacer(minLength: 0)
                         }
                         .padding(.top, 3).padding(.horizontal, 2)

@@ -101,10 +101,10 @@ final class ProtoState: ObservableObject {
     }
 
     @MainActor
-    func createLiveEvent(title: String, date: Date, allDay: Bool, labelColor: String) async {
+    func createLiveEvent(title: String, date: Date, allDay: Bool, labelColor: String, location: String?, noteText: String?, repeatRule: String) async {
         guard let api, let calId = activeCalendarId else { return }
         do {
-            _ = try await api.createEvent(calendarId: calId, title: title, startsAt: date, allDay: allDay, repeatRule: "none", labelColor: labelColor, location: nil, note: nil)
+            _ = try await api.createEvent(calendarId: calId, title: title, startsAt: date, allDay: allDay, repeatRule: repeatRule, labelColor: labelColor, location: location, note: noteText)
             note("已保存 ✓")
             await loadLive()
             screen = .month
@@ -484,7 +484,17 @@ struct ProtoContent: View {
     @EnvironmentObject var s: ProtoState
     var body: some View {
         Group {
-            switch s.screen {
+            contentFor(s.screen)
+        }
+        .id(s.screen)
+        .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
+        .animation(.easeInOut(duration: 0.22), value: s.screen)
+    }
+
+    @ViewBuilder
+    private func contentFor(_ screen: ProtoScreen) -> some View {
+        Group {
+            switch screen {
             case .month, .weekly: ProtoMonthScreen()
             case .calendarList: ProtoCalendarList()
             case .monthPicker: ProtoMonthPicker()

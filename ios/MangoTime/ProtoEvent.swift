@@ -93,6 +93,7 @@ struct ProtoEventForm: View {
     @State private var showLabels = false
     @State private var labelIdx = 0
     @State private var date = Date()
+    @State private var repeatRule = "none"
     @State private var loc = ""
     @State private var noteText = ""
     @State private var scanPhoto: PhotosPickerItem?
@@ -119,7 +120,7 @@ struct ProtoEventForm: View {
                             s.screen = .month
                         }
                     } else {
-                        Task { await s.createLiveEvent(title: t, date: date, allDay: allDay, labelColor: labelKeys[labelIdx]) }
+                        Task { await s.createLiveEvent(title: t, date: date, allDay: allDay, labelColor: labelKeys[labelIdx], location: loc.isEmpty ? nil : loc, noteText: noteText.isEmpty ? nil : noteText, repeatRule: repeatRule) }
                     }
                 } else {
                     s.note("已保存（mock）"); s.screen = .month
@@ -148,7 +149,7 @@ struct ProtoEventForm: View {
                         s.note("已套用 ✓ 檢查吓先好保存")
                     })
             }
-            PRow(icon: "calendar", label: "行事曆", value: "家庭日曆") { s.note("揀行事曆（mock）") }
+            PRow(icon: "calendar", label: "行事曆", value: s.liveCalendars.first(where: { $0.id == s.activeCalendarId })?.name ?? "家庭日曆") { s.note("暫時得一個行事曆") }
             PRow(icon: "doc.text", label: "儲存為備忘錄", toggle: $saveAsMemo)
             Button { showLabels.toggle() } label: {
                 HStack {
@@ -189,8 +190,27 @@ struct ProtoEventForm: View {
                 PRow(label: "全日", toggle: $allDay)
                 if !allDay { PRow(label: "時間", value: "19:30 – 23:00") { s.note("時間選擇器（mock）") } }
             }
-            PRow(icon: "repeat", label: "重複", value: "唔重複") { s.note("重複選項（mock）") }
-            PRow(icon: "person.2", label: "成員", value: "全部成員") { s.note("揀成員（mock）") }
+            if s.api != nil {
+                Button {
+                    let order = ["none", "daily", "weekly", "monthly", "yearly"]
+                    let idx = order.firstIndex(of: repeatRule) ?? 0
+                    repeatRule = order[(idx + 1) % order.count]
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "repeat").font(.subheadline).foregroundStyle(PT.soft).frame(width: 20)
+                        Text("重複").foregroundStyle(.primary)
+                        Spacer()
+                        Text(["none": "唔重複", "daily": "每日", "weekly": "每週", "monthly": "每月", "yearly": "每年"][repeatRule] ?? "唔重複")
+                            .font(.subheadline).foregroundStyle(PT.soft)
+                    }
+                    .padding(.vertical, 12)
+                }
+                .buttonStyle(.plain)
+                .overlay(Divider().opacity(0.6), alignment: .bottom)
+            } else {
+                PRow(icon: "repeat", label: "重複", value: "唔重複") { s.note("重複選項（mock）") }
+            }
+            PRow(icon: "person.2", label: "成員", value: "全部成員")
             if s.api != nil {
                 HStack {
                     Label("地點", systemImage: "mappin")
@@ -209,7 +229,9 @@ struct ProtoEventForm: View {
                 PRow(icon: "link", label: "網址", value: "未填") { s.note("網址輸入（mock）") }
                 PRow(icon: "note.text", label: "備註", value: "未填") { s.screen = .noteEdit }
             }
-            PRow(icon: "paperclip", label: "上傳檔案", value: "＋") { s.upsell = true }
+            if s.api == nil {
+                PRow(icon: "paperclip", label: "上傳檔案", value: "＋") { s.upsell = true }
+            }
             PRow(icon: "checkmark.square", label: "待辦清單", value: "＋ 新增清單") { s.screen = .todos }
         }
         .onAppear {
