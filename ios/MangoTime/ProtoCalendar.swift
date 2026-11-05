@@ -312,6 +312,15 @@ struct ProtoCalendarList: View {
     private var liveList: some View {
         PSheet(title: "行事曆清單", onBack: { s.screen = .month }, onRefresh: { await s.loadLive() }, content: {
             VStack(spacing: 0) {
+                if s.liveCalendars.isEmpty {
+                    // 空態（參考圖 IMG_4684）
+                    VStack(spacing: 10) {
+                        Image(systemName: "calendar.badge.plus").font(.system(size: 34)).foregroundStyle(PT.soft.opacity(0.6))
+                        Text("仲未有行事曆").bold()
+                        Text("喺下面開你第一個行事曆，或者輸入邀請碼加入人哋嘅。").font(.subheadline).foregroundStyle(PT.soft).multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity).padding(.vertical, 40)
+                }
                 ForEach(s.liveCalendars) { cal in
                     Button {
                         s.activeCalendarId = cal.id
@@ -325,7 +334,7 @@ struct ProtoCalendarList: View {
                                 Text("行事曆").font(.caption).foregroundStyle(PT.soft)
                             }
                             Spacer()
-                            if cal.id == s.activeCalendarId { Text("◎").foregroundStyle(PT.orange) }
+                            if cal.id == s.activeCalendarId { Image(systemName: "checkmark.circle.fill").foregroundStyle(PT.orange) }
                         }
                         .padding(.vertical, 10)
                         .overlay(Divider().opacity(0.5), alignment: .bottom)
