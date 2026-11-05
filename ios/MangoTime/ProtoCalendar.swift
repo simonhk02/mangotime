@@ -170,11 +170,10 @@ struct ProtoMonthScreen: View {
         return VStack(spacing: 0) {
             HStack(spacing: 0) {
                 ForEach(weekdays, id: \.self) { w in
-                    Text(w).font(.caption2).foregroundStyle(PT.soft).frame(maxWidth: .infinity)
+                    Text(w).font(.system(size: 11, weight: .medium)).foregroundStyle(PT.soft).frame(maxWidth: .infinity)
                 }
             }
-            .padding(.vertical, 5)
-            Divider()
+            .padding(.vertical, 8)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 0) {
                 ForEach(cells) { cell in
                     let evs = eventsFor(cell)
@@ -185,49 +184,49 @@ struct ProtoMonthScreen: View {
                             else if let mock = first.mock { s.screen = .eventDetail(mock) }
                         } else { s.screen = .create }
                     } label: {
-                        VStack(spacing: 2) {
-                            HStack(alignment: .firstTextBaseline, spacing: 3) {
-                                ZStack {
-                                    if isToday {
-                                        Circle().fill(PT.orange).frame(width: 22, height: 22)
-                                    }
-                                    Text("\(cal.component(.day, from: cell.date))")
-                                        .font(.system(size: 13, weight: isToday ? .bold : .medium))
-                                        .foregroundStyle(isToday ? .white : .primary)
+                        // Apple Calendar 式無框格：日期喺頂，活動做色 pill，冇格線
+                        VStack(spacing: 3) {
+                            ZStack {
+                                if isToday {
+                                    Circle().fill(PT.orange).frame(width: 24, height: 24)
                                 }
-                                if s.lunarOn {
-                                    Text(Lunar.short(cell.date))
-                                        .font(.system(size: 7))
+                                Text("\(cal.component(.day, from: cell.date))")
+                                    .font(.system(size: 14, weight: isToday ? .bold : .regular))
+                                    .foregroundStyle(isToday ? .white : (cell.other ? PT.soft.opacity(0.6) : .primary))
+                            }
+                            if s.lunarOn {
+                                Text(Lunar.short(cell.date))
+                                    .font(.system(size: 7))
+                                    .foregroundStyle(PT.soft.opacity(0.8))
+                            }
+                            VStack(spacing: 2) {
+                                ForEach(evs.prefix(2)) { ev in
+                                    Text(ev.title)
+                                        .font(.system(size: 9, weight: .medium))
+                                        .lineLimit(1)
+                                        .padding(.horizontal, 5).padding(.vertical, 2)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .background(ev.color)
+                                        .foregroundStyle(.white)
+                                        .clipShape(RoundedRectangle(cornerRadius: 5))
+                                }
+                                if evs.count > 2 {
+                                    Text("+\(evs.count - 2)")
+                                        .font(.system(size: 8, weight: .medium))
                                         .foregroundStyle(PT.soft)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.horizontal, 5)
                                 }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            ForEach(evs.prefix(2)) { ev in
-                                Text(ev.title)
-                                    .font(.system(size: 8, weight: .medium))
-                                    .lineLimit(1)
-                                    .padding(.horizontal, 4).padding(.vertical, 1.5)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .background(ev.color)
-                                    .foregroundStyle(.white)
-                                    .clipShape(Capsule())
-                            }
-                            if evs.count > 2 {
-                                Text("+\(evs.count - 2)")
-                                    .font(.system(size: 7, weight: .medium))
-                                    .foregroundStyle(PT.soft)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.horizontal, 4)
-                            }
                             Spacer(minLength: 0)
                         }
-                        .padding(.top, 4).padding(.horizontal, 3)
-                        .frame(maxWidth: .infinity, minHeight: 72, alignment: .top)
-                        .background(Color(.systemBackground))
-                        .overlay(Rectangle().stroke(Color(.separator).opacity(0.25), lineWidth: 0.3))
-                        .opacity(cell.other ? 0.3 : 1)
+                        .padding(.top, 5).padding(.horizontal, 3)
+                        .frame(maxWidth: .infinity, minHeight: 76, alignment: .top)
+                        .contentShape(Rectangle())
+                        .opacity(cell.other ? 0.45 : 1)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PressableStyle())
                 }
             }
         }
