@@ -522,13 +522,42 @@ struct ProtoTabBar: View {
 
 struct ProtoContent: View {
     @EnvironmentObject var s: ProtoState
+    @State private var navStyle: NavStyle = .push
+
+    private enum NavStyle { case tab, sheet, push }
+
+    private static let tabScreens: Set<ProtoScreen> = [.month, .weekly, .feed, .notices, .other]
+
+    private func styleFor(from old: ProtoScreen, to new: ProtoScreen) -> NavStyle {
+        // 新增/編輯活動 = iOS sheet 式由下面彈上
+        if case .create = new { return .sheet }
+        if case .editEvent = new { return .sheet }
+        // tab 互轉 = 淡入淡出
+        if ProtoContent.tabScreens.contains(old) && ProtoContent.tabScreens.contains(new) { return .tab }
+        return .push
+    }
+
+    private var transition: AnyTransition {
+        switch navStyle {
+        case .tab:
+            return .opacity
+        case .sheet:
+            return .move(edge: .bottom).combined(with: .opacity)
+        case .push:
+            return .asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading))
+        }
+    }
+
     var body: some View {
         Group {
             contentFor(s.screen)
         }
         .id(s.screen)
-        .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
-        .animation(.spring(response: 0.32, dampingFraction: 0.86), value: s.screen)
+        .transition(transition)
+        .animation(.spring(response: 0.34, dampingFraction: 0.88), value: s.screen)
+        .onChange(of: s.screen) { old, new in
+            navStyle = styleFor(from: old, to: new)
+        }
     }
 
     @ViewBuilder
