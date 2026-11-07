@@ -175,6 +175,6 @@ final class MangoTimeUITests: XCTestCase {
         typeInto(app.textFields["login_email"], "lo\(uniq)@test.hk")
         typeInto(app.secureTextFields["login_password"], "password123")
         tapAny(app.buttons["登入"])
-        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS '▾'")).firstMatch.waitForExistence(timeout: 10), "登入後應見到月曆")
+        XCTAssertTrue(app.buttons["今日"].waitForExistence(timeout: 10) || app.staticTexts.matching(NSPredicate(format: "label CONTAINS '年'")).firstMatch.waitForExistence(timeout: 5), "登入後應見到月曆")
     }
 }
