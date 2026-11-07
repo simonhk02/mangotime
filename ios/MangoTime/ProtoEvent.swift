@@ -136,11 +136,13 @@ struct ProtoEventForm: View {
                     .background(PT.orange).clipShape(RoundedRectangle(cornerRadius: 8))
             }
         )) {
-            TextField("標題（必填）", text: $title)
-                .font(.title3).bold()
-                .padding(.vertical, 12)
-                .overlay(Divider(), alignment: .bottom)
-                .accessibilityIdentifier("event_title")
+            PCard {
+                TextField("標題（必填）", text: $title)
+                    .font(.title3).bold()
+                    .padding(.vertical, 12)
+                    .accessibilityIdentifier("event_title")
+            }
+            .padding(.top, 8)
             if s.api != nil && editing == nil {
                 EventScanSection(
                     scanning: $scanning, scanned: $scanned, scanPhoto: $scanPhoto,
@@ -154,20 +156,23 @@ struct ProtoEventForm: View {
                         s.note("已套用 ✓ 檢查吓先好保存")
                     })
             }
-            PRow(icon: "calendar", label: "行事曆", value: s.liveCalendars.first(where: { $0.id == s.activeCalendarId })?.name ?? "家庭日曆") { s.note("暫時得一個行事曆") }
-            PRow(icon: "doc.text", label: "儲存為備忘錄", toggle: $saveAsMemo)
-            Button { showLabels.toggle() } label: {
-                HStack {
-                    Label("標籤", systemImage: "tag").foregroundStyle(.primary)
-                    Spacer()
-                    Circle().fill(Mock.labels[labelIdx].1).frame(width: 10, height: 10)
-                    Text(Mock.labels[labelIdx].0).font(.subheadline).foregroundStyle(PT.soft)
-                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(PT.soft)
+            PCard {
+                PRow(icon: "calendar", label: "行事曆", value: s.liveCalendars.first(where: { $0.id == s.activeCalendarId })?.name ?? "家庭日曆") { s.note("暫時得一個行事曆") }
+                PRow(icon: "doc.text", label: "儲存為備忘錄", toggle: $saveAsMemo)
+                Button { showLabels.toggle() } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "tag").font(.subheadline).foregroundStyle(PT.soft).frame(width: 20)
+                        Text("標籤").foregroundStyle(.primary)
+                        Spacer()
+                        Circle().fill(Mock.labels[labelIdx].1).frame(width: 10, height: 10)
+                        Text(Mock.labels[labelIdx].0).font(.subheadline).foregroundStyle(PT.soft)
+                        Image(systemName: "chevron.right").font(.caption).foregroundStyle(PT.soft)
+                    }
+                    .padding(.vertical, 12)
                 }
-                .padding(.vertical, 12)
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
-            .overlay(Divider().opacity(0.6), alignment: .bottom)
+            .padding(.top, 14)
             if showLabels {
                 VStack(spacing: 0) {
                     ForEach(Array(Mock.labels.enumerated()), id: \.offset) { i, l in
@@ -185,59 +190,65 @@ struct ProtoEventForm: View {
                 }
                 .padding(10)
                 .background(Color(.secondarySystemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .padding(.top, 6)
             }
-            if s.api != nil {
-                DatePicker("日期", selection: $date, displayedComponents: allDay ? [.date] : [.date, .hourAndMinute])
-                PRow(label: "全日", toggle: $allDay)
-            } else {
-                PRow(icon: "clock", label: "日期", value: "11月19日（週四）") { s.note("日期選擇器（mock）") }
-                PRow(label: "全日", toggle: $allDay)
-                if !allDay { PRow(label: "時間", value: "19:30 – 23:00") { s.note("時間選擇器（mock）") } }
+            PCard {
+                if s.api != nil {
+                    DatePicker("日期", selection: $date, displayedComponents: allDay ? [.date] : [.date, .hourAndMinute])
+                    PRow(label: "全日", toggle: $allDay)
+                    Button {
+                        let order = ["none", "daily", "weekly", "monthly", "yearly"]
+                        let idx = order.firstIndex(of: repeatRule) ?? 0
+                        repeatRule = order[(idx + 1) % order.count]
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "repeat").font(.subheadline).foregroundStyle(PT.soft).frame(width: 20)
+                            Text("重複").foregroundStyle(.primary)
+                            Spacer()
+                            Text(["none": "唔重複", "daily": "每日", "weekly": "每週", "monthly": "每月", "yearly": "每年"][repeatRule] ?? "唔重複")
+                                .font(.subheadline).foregroundStyle(PT.soft)
+                        }
+                        .padding(.vertical, 12)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    PRow(icon: "clock", label: "日期", value: "11月19日（週四）") { s.note("日期選擇器（mock）") }
+                    PRow(label: "全日", toggle: $allDay)
+                    if !allDay { PRow(label: "時間", value: "19:30 – 23:00") { s.note("時間選擇器（mock）") } }
+                    PRow(icon: "repeat", label: "重複", value: "唔重複") { s.note("重複選項（mock）") }
+                }
             }
-            if s.api != nil {
-                Button {
-                    let order = ["none", "daily", "weekly", "monthly", "yearly"]
-                    let idx = order.firstIndex(of: repeatRule) ?? 0
-                    repeatRule = order[(idx + 1) % order.count]
-                } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: "repeat").font(.subheadline).foregroundStyle(PT.soft).frame(width: 20)
-                        Text("重複").foregroundStyle(.primary)
+            .padding(.top, 14)
+            PCard {
+                PRow(icon: "person.2", label: "成員", value: "全部成員")
+                if s.api != nil {
+                    HStack {
+                        Label("地點", systemImage: "mappin")
                         Spacer()
-                        Text(["none": "唔重複", "daily": "每日", "weekly": "每週", "monthly": "每月", "yearly": "每年"][repeatRule] ?? "唔重複")
-                            .font(.subheadline).foregroundStyle(PT.soft)
+                        TextField("未填", text: $loc).multilineTextAlignment(.trailing).foregroundStyle(PT.soft)
+                    }
+                    .padding(.vertical, 12).overlay(Divider().opacity(0.6), alignment: .bottom)
+                    HStack {
+                        Label("備註", systemImage: "note.text")
+                        Spacer()
+                        TextField("未填", text: $noteText).multilineTextAlignment(.trailing).foregroundStyle(PT.soft)
                     }
                     .padding(.vertical, 12)
+                } else {
+                    PRow(icon: "mappin", label: "地點", value: "未填") { s.note("地點輸入（mock）") }
+                    PRow(icon: "link", label: "網址", value: "未填") { s.note("網址輸入（mock）") }
+                    PRow(icon: "note.text", label: "備註", value: "未填") { s.screen = .noteEdit }
                 }
-                .buttonStyle(.plain)
-                .overlay(Divider().opacity(0.6), alignment: .bottom)
-            } else {
-                PRow(icon: "repeat", label: "重複", value: "唔重複") { s.note("重複選項（mock）") }
             }
-            PRow(icon: "person.2", label: "成員", value: "全部成員")
-            if s.api != nil {
-                HStack {
-                    Label("地點", systemImage: "mappin")
-                    Spacer()
-                    TextField("未填", text: $loc).multilineTextAlignment(.trailing).foregroundStyle(PT.soft)
+            .padding(.top, 14)
+            PCard {
+                if s.api == nil {
+                    PRow(icon: "paperclip", label: "上傳檔案", value: "＋") { s.upsell = true }
                 }
-                .padding(.vertical, 12).overlay(Divider().opacity(0.6), alignment: .bottom)
-                HStack {
-                    Label("備註", systemImage: "note.text")
-                    Spacer()
-                    TextField("未填", text: $noteText).multilineTextAlignment(.trailing).foregroundStyle(PT.soft)
-                }
-                .padding(.vertical, 12).overlay(Divider().opacity(0.6), alignment: .bottom)
-            } else {
-                PRow(icon: "mappin", label: "地點", value: "未填") { s.note("地點輸入（mock）") }
-                PRow(icon: "link", label: "網址", value: "未填") { s.note("網址輸入（mock）") }
-                PRow(icon: "note.text", label: "備註", value: "未填") { s.screen = .noteEdit }
+                PRow(icon: "checkmark.square", label: "待辦清單", value: "＋ 新增清單") { s.screen = .todos }
             }
-            if s.api == nil {
-                PRow(icon: "paperclip", label: "上傳檔案", value: "＋") { s.upsell = true }
-            }
-            PRow(icon: "checkmark.square", label: "待辦清單", value: "＋ 新增清單") { s.screen = .todos }
+            .padding(.top, 14)
         }
         .onAppear {
             guard let ev = editing else { return }

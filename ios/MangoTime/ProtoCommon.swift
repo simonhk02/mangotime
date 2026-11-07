@@ -10,6 +10,17 @@ struct PressableStyle: ButtonStyle {
     }
 }
 
+/// iOS 設定式圓角卡片（一組 row 包埋一齊）
+struct PCard<Content: View>: View {
+    @ViewBuilder var content: Content
+    var body: some View {
+        VStack(spacing: 0) { content }
+            .padding(.horizontal, 14)
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+}
+
 /// 自家製 MangoTime logo（純 SwiftUI，唔使圖檔）：橙色芒果身 + 綠葉
 struct MangoLogo: View {
     var size: CGFloat = 64
