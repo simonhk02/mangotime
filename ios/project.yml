@@ -67,16 +67,13 @@ targets:
       - path: MangoTimeWidget
         excludes:
           - "Info.plist"
-    info:
-      path: MangoTimeWidget/Info.plist
-      properties:
-        CFBundleDisplayName: 今日活動
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mangotime.app.widget
         SWIFT_VERSION: "5.0"
         SWIFT_STRICT_CONCURRENCY: minimal
         GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: MangoTimeWidget/Info.plist
         CURRENT_PROJECT_VERSION: "10"
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_ENTITLEMENTS: MangoTimeWidget/MangoTimeWidget.entitlements
