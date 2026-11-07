@@ -34,11 +34,16 @@ jobs:
         run: |
           set -o pipefail
           cd ios
-          xcodebuild test -project MangoTime.xcodeproj -scheme MangoTime \
+          # widget appex 未簽名裝唔落模擬器——build-for-testing → 剝 PlugIns → test-without-building
+          xcodebuild build-for-testing -project MangoTime.xcodeproj -scheme MangoTime \
             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
             -derivedDataPath /tmp/dd \
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tail -5
+          rm -rf /tmp/dd/Build/Products/Debug-iphonesimulator/MangoTime.app/PlugIns
+          XCR=$(find /tmp/dd/Build/Products -name "*.xctestrun" -maxdepth 1 | head -1)
+          xcodebuild test-without-building -xctestrun "$XCR" \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
             -resultBundlePath /tmp/uat.xcresult \
-            CODE_SIGNING_ALLOWED=NO \
             -only-testing:MangoTimeUITests 2>&1 | tee /tmp/uat.log | tail -30
 
       - name: UAT report
