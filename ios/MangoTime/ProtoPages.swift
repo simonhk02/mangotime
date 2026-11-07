@@ -261,30 +261,39 @@ struct ProtoOther: View {
                             Image(systemName: "chevron.right").font(.caption).foregroundStyle(PT.soft)
                         }
                         .padding(.vertical, 14)
+                        .padding(.horizontal, 14)
+                        .background(Color(.secondarySystemBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PressableStyle())
+                    .padding(.top, 10)
                     Button { s.screen = .premiumDetail } label: {
                         HStack {
                             Label("MangoTime Premium", systemImage: "star.fill").bold().foregroundStyle(PT.orange)
                             Spacer()
-                            Text("開始月付HK$23.00的無廣告方案！免費使用1月 ›").font(.caption).foregroundStyle(PT.soft).lineLimit(1)
+                            Text("了解詳情 ›").font(.caption).foregroundStyle(PT.soft).lineLimit(1)
                         }
-                        .padding(12)
+                        .padding(14)
                         .background(Color(.secondarySystemBackground))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
                     }
-                    .buttonStyle(.plain)
-                    .padding(.bottom, 8)
-                    PRow(icon: "calendar", label: "行事曆清單") { s.screen = .calendarList }
-                    PRow(icon: "doc.text", label: "備忘錄") { s.screen = .memos }
-                    PRow(icon: "checkmark.square", label: "待辦清單") { s.screen = .todos }
-                    PRow(icon: "photo.on.rectangle", label: "相簿") { s.screen = .album }
-                    PRow(icon: "person.2", label: "成員") { s.screen = .members }
-                    PRow(icon: "link", label: "訂閱外部日曆") { s.screen = .extSubscribe }
-                    PRow(icon: "gearshape", label: "App 設定") { s.screen = .settings }
-                    PRow(icon: "megaphone", label: "公告") { s.screen = .noticeBoard }
-                    PRow(icon: "book", label: "MangoTime 使用手冊") { s.screen = .userGuide }
-                    PRow(icon: "questionmark.circle", label: "使用方法") { s.screen = .helpHome }
+                    .buttonStyle(PressableStyle())
+                    .padding(.vertical, 12)
+                    PCard {
+                        PRow(icon: "calendar", label: "行事曆清單") { s.screen = .calendarList }
+                        PRow(icon: "doc.text", label: "備忘錄") { s.screen = .memos }
+                        PRow(icon: "checkmark.square", label: "待辦清單") { s.screen = .todos }
+                        PRow(icon: "photo.on.rectangle", label: "相簿") { s.screen = .album }
+                        PRow(icon: "person.2", label: "成員") { s.screen = .members }
+                        PRow(icon: "link", label: "訂閱外部日曆") { s.screen = .extSubscribe }
+                    }
+                    PCard {
+                        PRow(icon: "gearshape", label: "App 設定") { s.screen = .settings }
+                        PRow(icon: "megaphone", label: "公告") { s.screen = .noticeBoard }
+                        PRow(icon: "book", label: "MangoTime 使用手冊") { s.screen = .userGuide }
+                        PRow(icon: "questionmark.circle", label: "使用方法") { s.screen = .helpHome }
+                    }
+                    .padding(.top, 12)
                 }
                 .padding(.horizontal, 16)
             }
