@@ -331,25 +331,30 @@ struct ProtoLiveEventDetail: View {
         PSheet(title: ev.title, onBack: { s.screen = .month }, right: AnyView(
             Button { s.screen = .editEvent(ev) } label: { Text("編輯").foregroundStyle(PT.orange) }
         )) {
-            PRow(icon: "clock", label: "", value: startText)
-            HStack {
-                Label("標籤", systemImage: "tag")
-                Spacer()
-                Text(ev.labelColor ?? "bright-orange").font(.subheadline).foregroundStyle(PT.soft)
+            PCard {
+                PRow(icon: "clock", label: "", value: startText)
+                HStack(spacing: 10) {
+                    Image(systemName: "tag").font(.subheadline).foregroundStyle(PT.soft).frame(width: 20)
+                    Text("標籤")
+                    Spacer()
+                    Circle().fill(PT.orange).frame(width: 10, height: 10)
+                    Text(ev.labelColor ?? "bright-orange").font(.subheadline).foregroundStyle(PT.soft)
+                }
+                .padding(.vertical, 12)
+                if let loc = ev.location, !loc.isEmpty { PRow(icon: "mappin", label: "地點", value: loc) }
+                if ev.repeatRule != "none" { PRow(icon: "repeat", label: "重複", value: ev.repeatRule) }
+                if let note = ev.note, !note.isEmpty { PRow(icon: "note.text", label: "備註", value: note) }
             }
-            .padding(.vertical, 12)
-            .overlay(Divider().opacity(0.6), alignment: .bottom)
-            if let loc = ev.location, !loc.isEmpty { PRow(icon: "mappin", label: "地點", value: loc) }
-            if ev.repeatRule != "none" { PRow(icon: "repeat", label: "重複", value: ev.repeatRule) }
-            if let note = ev.note, !note.isEmpty { PRow(icon: "note.text", label: "備註", value: note) }
-            LiveAttachments(eventId: ev.id)
-            LiveChat(eventId: ev.id)
+            .padding(.top, 10)
+            PCard { LiveAttachments(eventId: ev.id) }.padding(.top, 14)
+            PCard { LiveChat(eventId: ev.id) }.padding(.top, 14)
             Button {
                 Task { await s.deleteLiveEvent(ev) }
             } label: {
                 Text("刪除活動").bold().foregroundStyle(.red)
                     .frame(maxWidth: .infinity).padding(.vertical, 12)
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.red))
+                    .background(Color(.secondarySystemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
             }
             .padding(.top, 18)
         }
