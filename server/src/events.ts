@@ -25,14 +25,25 @@ async function requireCalendarMember(prisma: PrismaClient, calendarId: string, u
 
 const REPEAT_RULES = new Set(["none", "daily", "weekly", "monthly", "yearly"]);
 
-function publicEvent(e: Event) {
-  return {
+type ParticipantRow = { userId: string; status: string; user?: { displayName: string | null } };
+
+export function publicEvent(e: Event & { participants?: ParticipantRow[] }) {
+  const base: Record<string, unknown> = {
     id: e.id, calendarId: e.calendarId, title: e.title, allDay: e.allDay,
     startsAt: e.startsAt, endsAt: e.endsAt, repeatRule: e.repeatRule, remindMin: e.remindMin,
     labelColor: e.labelColor, note: e.note, url: e.url, location: e.location,
     creatorId: e.creatorId, createdAt: e.createdAt, updatedAt: e.updatedAt,
   };
+  if (e.participants) {
+    base.participants = e.participants.map((p) => ({
+      userId: p.userId, status: p.status, displayName: p.user?.displayName ?? null,
+    }));
+    base.goingCount = e.participants.filter((p) => p.status === "going").length;
+  }
+  return base;
 }
+
+const PARTICIPANT_INCLUDE = { participants: { include: { user: { select: { displayName: true } } } } };
 
 type EventInput = {
   title?: string; allDay?: boolean; startsAt?: string; endsAt?: string | null;
@@ -72,7 +83,7 @@ function parseEventInput(body: EventInput, reply: FastifyReply): { data?: Record
   return { data };
 }
 
-async function emitEvent(prisma: PrismaClient, type: string, aggregateId: string, payload: object) {
+export async function emitEvent(prisma: PrismaClient, type: string, aggregateId: string, payload: object) {
   await prisma.outboxEvent.create({ data: { type, aggregateId, payload: JSON.stringify(payload) } });
 }
 
@@ -117,7 +128,7 @@ export function registerEventRoutes(app: FastifyInstance, prisma: PrismaClient) 
       if (isNaN(d.getTime())) return reply.code(400).send({ error: "to must be ISO datetime" });
       where.startsAt = { ...where.startsAt, lte: d };
     }
-    const events = await prisma.event.findMany({ where, orderBy: { startsAt: "asc" } });
+    const events = await prisma.event.findMany({ where, include: PARTICIPANT_INCLUDE, orderBy: { startsAt: "asc" } });
     return { events: events.map(publicEvent) };
   });
 
@@ -158,6 +169,7 @@ export function registerEventRoutes(app: FastifyInstance, prisma: PrismaClient) 
           { note: { contains: kw } },
         ],
       },
+      include: PARTICIPANT_INCLUDE,
       orderBy: { startsAt: "asc" },
       take: 50,
     });
