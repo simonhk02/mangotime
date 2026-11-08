@@ -43,7 +43,7 @@ final class APIClient: ObservableObject {
         self.token = UserDefaults.standard.string(forKey: "mt_token")
     }
 
-    private func request<T: Decodable>(_ method: String, _ path: String, body: Encodable? = nil) async throws -> T {
+    func request<T: Decodable>(_ method: String, _ path: String, body: Encodable? = nil) async throws -> T {
         var req = URLRequest(url: URL(string: baseURL + path)!)
         req.httpMethod = method
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -163,11 +163,29 @@ struct MTEvent: Codable, Identifiable, Hashable {
     let location: String?
     let url: String?
     let note: String?
+    let participants: [MTRsvp]?
+    let goingCount: Int?
+}
+
+struct MTRsvp: Codable, Hashable {
+    let userId: String
+    let status: String
+    let displayName: String?
 }
 
 struct EventResponse: Codable { let event: MTEvent }
 struct EventListResponse: Codable { let events: [MTEvent] }
 struct AttachmentListResponse: Codable { let attachments: [MTAttachment] }
+
+extension APIClient {
+    func setRsvp(eventId: String, status: String) async throws {
+        struct P: Encodable { let status: String }
+        let _: [String: Bool] = try await request("POST", "/v1/events/\(eventId)/rsvp", body: P(status: status))
+    }
+    func clearRsvp(eventId: String) async throws {
+        let _: [String: Bool] = try await request("DELETE", "/v1/events/\(eventId)/rsvp")
+    }
+}
 
 extension APIClient {
     func listEvents(calendarId: String, from: Date, to: Date) async throws -> [MTEvent] {

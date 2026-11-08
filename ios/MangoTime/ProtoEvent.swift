@@ -251,13 +251,24 @@ struct ProtoEventForm: View {
             .padding(.top, 14)
         }
         .onAppear {
-            guard let ev = editing else { return }
-            title = ev.title
-            allDay = ev.allDay
-            if let d = parseISODate(ev.startsAt) { date = d }
-            if let i = labelKeys.firstIndex(of: ev.labelColor ?? "bright-orange") { labelIdx = i }
-            loc = ev.location ?? ""
-            noteText = ev.note ?? ""
+            if let ev = editing {
+                title = ev.title
+                allDay = ev.allDay
+                if let d = parseISODate(ev.startsAt) { date = d }
+                if let i = labelKeys.firstIndex(of: ev.labelColor ?? "bright-orange") { labelIdx = i }
+                loc = ev.location ?? ""
+                noteText = ev.note ?? ""
+            } else if let src = s.duplicateSource {
+                // 複製活動：拎晒欄位，日期跟原本
+                title = src.title
+                allDay = src.allDay
+                if let d = parseISODate(src.startsAt) { date = d }
+                if let i = labelKeys.firstIndex(of: src.labelColor ?? "bright-orange") { labelIdx = i }
+                loc = src.location ?? ""
+                noteText = src.note ?? ""
+                repeatRule = src.repeatRule
+                s.duplicateSource = nil
+            }
         }
     }
 }
@@ -346,15 +357,27 @@ struct ProtoLiveEventDetail: View {
                 if let note = ev.note, !note.isEmpty { PRow(icon: "note.text", label: "備註", value: note) }
             }
             .padding(.top, 10)
+            PCard { RsvpSection(ev: ev) }.padding(.top, 14)
             PCard { LiveAttachments(eventId: ev.id) }.padding(.top, 14)
             PCard { LiveChat(eventId: ev.id) }.padding(.top, 14)
-            Button {
-                Task { await s.deleteLiveEvent(ev) }
-            } label: {
-                Text("刪除活動").bold().foregroundStyle(.red)
-                    .frame(maxWidth: .infinity).padding(.vertical, 12)
-                    .background(Color(.secondarySystemBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
+            HStack(spacing: 12) {
+                Button {
+                    s.duplicateSource = ev
+                    s.screen = .create
+                } label: {
+                    Text("複製").bold().foregroundStyle(PT.orange)
+                        .frame(maxWidth: .infinity).padding(.vertical, 12)
+                        .background(Color(.secondarySystemBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                }
+                Button {
+                    Task { await s.deleteLiveEvent(ev) }
+                } label: {
+                    Text("刪除").bold().foregroundStyle(.red)
+                        .frame(maxWidth: .infinity).padding(.vertical, 12)
+                        .background(Color(.secondarySystemBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                }
             }
             .padding(.top, 18)
         }
@@ -362,6 +385,74 @@ struct ProtoLiveEventDetail: View {
 }
 
 /// 活動附件（task 5.4）：上傳 + 顯示（相縮圖 / PDF 連結）
+// MARK: - RSVP 參加區
+struct RsvpSection: View {
+    @EnvironmentObject var s: ProtoState
+    let ev: MTEvent
+    @State private var myStatus: String? = nil
+    @State private var list: [MTRsvp] = []
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: "person.2").foregroundStyle(PT.soft).frame(width: 20)
+                Text("參加").bold()
+                Spacer()
+                if !list.filter({ $0.status == "going" }).isEmpty {
+                    Text("\(list.filter { $0.status == "going" }.count) 人參加")
+                        .font(.caption).foregroundStyle(PT.soft)
+                }
+            }
+            HStack(spacing: 10) {
+                Button { Task { await vote("going") } } label: {
+                    Text(myStatus == "going" ? "✓ 參加" : "參加")
+                        .bold().font(.subheadline)
+                        .foregroundStyle(myStatus == "going" ? .white : PT.orange)
+                        .frame(maxWidth: .infinity).padding(.vertical, 9)
+                        .background(myStatus == "going" ? PT.orange : PT.orange.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .buttonStyle(.plain)
+                Button { Task { await vote("declined") } } label: {
+                    Text(myStatus == "declined" ? "✓ 唔去" : "唔去")
+                        .bold().font(.subheadline)
+                        .foregroundStyle(myStatus == "declined" ? .white : PT.soft)
+                        .frame(maxWidth: .infinity).padding(.vertical, 9)
+                        .background(myStatus == "declined" ? Color(.systemGray) : Color(.tertiarySystemBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .buttonStyle(.plain)
+            }
+            let going = list.filter { $0.status == "going" }
+            if !going.isEmpty {
+                Text(going.map { $0.displayName ?? "成員" }.joined(separator: "、"))
+                    .font(.caption).foregroundStyle(PT.soft)
+            }
+        }
+        .padding(.vertical, 6)
+        .onAppear {
+            list = ev.participants ?? []
+            myStatus = ev.participants?.first(where: { $0.userId == s.api?.currentUser?.id })?.status
+        }
+    }
+
+    private func vote(_ status: String) async {
+        guard let api = s.api else { return }
+        do {
+            if myStatus == status {
+                try await api.clearRsvp(eventId: ev.id)
+                myStatus = nil
+                list.removeAll { $0.userId == api.currentUser?.id }
+            } else {
+                try await api.setRsvp(eventId: ev.id, status: status)
+                myStatus = status
+                list.removeAll { $0.userId == api.currentUser?.id }
+                list.append(MTRsvp(userId: api.currentUser?.id ?? "", status: status, displayName: api.currentUser?.displayName))
+            }
+        } catch { s.note("表態失敗，請再試") }
+    }
+}
+
 struct LiveAttachments: View {
     let eventId: String
     @State private var attachments: [MTAttachment] = []

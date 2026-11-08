@@ -169,8 +169,12 @@ struct ProtoMonthScreen: View {
         let cells = monthCells(base: s.displayMonth, weekStartMonday: s.weekStartMonday)
         return VStack(spacing: 0) {
             HStack(spacing: 0) {
-                ForEach(weekdays, id: \.self) { w in
-                    Text(w).font(.system(size: 11, weight: .medium)).foregroundStyle(PT.soft).frame(maxWidth: .infinity)
+                ForEach(Array(weekdays.enumerated()), id: \.offset) { i, w in
+                    // 週日紅、週六藍（TimeTree 標配）
+                    let realIdx = s.weekStartMonday ? (i + 1) % 7 : i // 0=日…6=六
+                    Text(w).font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(realIdx == 0 ? PT.red : (realIdx == 6 ? Color(.systemBlue) : PT.soft))
+                        .frame(maxWidth: .infinity)
                 }
             }
             .padding(.vertical, 8)
@@ -178,6 +182,11 @@ struct ProtoMonthScreen: View {
                 ForEach(cells) { cell in
                     let evs = eventsFor(cell)
                     let isToday = !cell.other && cal.isDateInToday(cell.date)
+                    let wd = cal.component(.weekday, from: cell.date) // 1=日 7=六
+                    let holiday = HKHolidays.name(for: cell.date)
+                    let dayColor: Color = isToday ? .white
+                        : (cell.other ? PT.soft.opacity(0.6)
+                        : (wd == 1 || holiday != nil ? PT.red : (wd == 7 ? Color(.systemBlue) : .primary)))
                     Button {
                         if let first = evs.first {
                             if let live = first.live { s.screen = .liveEventDetail(live) }
@@ -192,9 +201,14 @@ struct ProtoMonthScreen: View {
                                 }
                                 Text("\(cal.component(.day, from: cell.date))")
                                     .font(.system(size: 14, weight: isToday ? .bold : .regular))
-                                    .foregroundStyle(isToday ? .white : (cell.other ? PT.soft.opacity(0.6) : .primary))
+                                    .foregroundStyle(dayColor)
                             }
-                            if s.lunarOn {
+                            if let h = holiday, !cell.other {
+                                Text(h)
+                                    .font(.system(size: 7))
+                                    .foregroundStyle(PT.red)
+                                    .lineLimit(1)
+                            } else if s.lunarOn {
                                 Text(Lunar.short(cell.date))
                                     .font(.system(size: 7))
                                     .foregroundStyle(PT.soft.opacity(0.8))
