@@ -1,5 +1,23 @@
 import SwiftUI
 
+/// 篩選 chip（搜尋/篩選設定用）：撳切換，active 填橙色
+struct FilterChip: View {
+    let text: String
+    let active: Bool
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            Text(text)
+                .font(.caption).bold()
+                .padding(.horizontal, 12).padding(.vertical, 7)
+                .foregroundStyle(active ? .white : .primary)
+                .background(active ? PT.orange : Color(.secondarySystemBackground))
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 /// Apple 式撳掣微縮放（撳落去 0.96，放手彈返）
 struct PressableStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {

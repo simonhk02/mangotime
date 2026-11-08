@@ -142,10 +142,10 @@ final class ProtoState: ObservableObject {
     }
 
     @MainActor
-    func createLiveEvent(title: String, date: Date, allDay: Bool, labelColor: String, location: String?, noteText: String?, repeatRule: String) async {
+    func createLiveEvent(title: String, date: Date, allDay: Bool, labelColor: String, location: String?, noteText: String?, repeatRule: String, remindMin: Int? = nil) async {
         guard let api, let calId = activeCalendarId else { return }
         do {
-            _ = try await api.createEvent(calendarId: calId, title: title, startsAt: date, allDay: allDay, repeatRule: repeatRule, labelColor: labelColor, location: location, note: noteText)
+            _ = try await api.createEvent(calendarId: calId, title: title, startsAt: date, allDay: allDay, repeatRule: repeatRule, labelColor: labelColor, location: location, note: noteText, remindMin: remindMin)
             note("已保存 ✓")
             await loadLive()
             screen = .month

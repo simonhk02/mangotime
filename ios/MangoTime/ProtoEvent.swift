@@ -94,6 +94,7 @@ struct ProtoEventForm: View {
     @State private var labelIdx = 0
     @State private var date = Date()
     @State private var repeatRule = "none"
+    @State private var remindMin: Int? = nil
     @State private var loc = ""
     @State private var noteText = ""
     @State private var scanPhoto: PhotosPickerItem?
@@ -114,7 +115,7 @@ struct ProtoEventForm: View {
                     guard !t.isEmpty else { return }
                     if let ev = editing {
                         Task {
-                            _ = try? await s.api?.updateEvent(eventId: ev.id, title: t, startsAt: date, allDay: allDay, labelColor: labelKeys[labelIdx], location: loc.isEmpty ? nil : loc, note: noteText.isEmpty ? nil : noteText)
+                            _ = try? await s.api?.updateEvent(eventId: ev.id, title: t, startsAt: date, allDay: allDay, labelColor: labelKeys[labelIdx], location: loc.isEmpty ? nil : loc, note: noteText.isEmpty ? nil : noteText, remindMin: remindMin)
                             s.note("已更新 ✓")
                             await s.loadLive()
                             s.screen = .month
@@ -124,7 +125,7 @@ struct ProtoEventForm: View {
                             if saveAsMemo, let calId = s.activeCalendarId {
                                 _ = try? await s.api?.createMemo(calendarId: calId, title: t, body: noteText)
                             }
-                            await s.createLiveEvent(title: t, date: date, allDay: allDay, labelColor: labelKeys[labelIdx], location: loc.isEmpty ? nil : loc, noteText: noteText.isEmpty ? nil : noteText, repeatRule: repeatRule)
+                            await s.createLiveEvent(title: t, date: date, allDay: allDay, labelColor: labelKeys[labelIdx], location: loc.isEmpty ? nil : loc, noteText: noteText.isEmpty ? nil : noteText, repeatRule: repeatRule, remindMin: remindMin)
                         }
                     }
                 } else {
@@ -212,6 +213,22 @@ struct ProtoEventForm: View {
                         .padding(.vertical, 12)
                     }
                     .buttonStyle(.plain)
+                    // 提醒（remindMin）：無/開始時/15分鐘/1小時/1天前
+                    HStack(spacing: 10) {
+                        Image(systemName: "bell").font(.subheadline).foregroundStyle(PT.soft).frame(width: 20)
+                        Text("提醒").foregroundStyle(.primary)
+                        Spacer()
+                        Picker("提醒", selection: $remindMin) {
+                            Text("無").tag(nil as Int?)
+                            Text("開始時").tag(0 as Int?)
+                            Text("15 分鐘前").tag(15 as Int?)
+                            Text("1 小時前").tag(60 as Int?)
+                            Text("1 天前").tag(1440 as Int?)
+                        }
+                        .pickerStyle(.menu)
+                        .labelsHidden()
+                    }
+                    .padding(.vertical, 4)
                 } else {
                     PRow(icon: "clock", label: "日期", value: "11月19日（週四）") { s.note("日期選擇器（mock）") }
                     PRow(label: "全日", toggle: $allDay)
@@ -258,6 +275,7 @@ struct ProtoEventForm: View {
                 if let i = labelKeys.firstIndex(of: ev.labelColor ?? "bright-orange") { labelIdx = i }
                 loc = ev.location ?? ""
                 noteText = ev.note ?? ""
+                remindMin = ev.remindMin
             } else if let src = s.duplicateSource {
                 // 複製活動：拎晒欄位，日期跟原本
                 title = src.title
@@ -267,6 +285,7 @@ struct ProtoEventForm: View {
                 loc = src.location ?? ""
                 noteText = src.note ?? ""
                 repeatRule = src.repeatRule
+                remindMin = src.remindMin
                 s.duplicateSource = nil
             }
         }
@@ -551,8 +570,20 @@ struct ProtoSearch: View {
     @State private var q = ""
     @State private var liveResults: [MTEvent] = []
     @State private var searching = false
+    @State private var filterLabel: String? = nil   // 標籤篩選
+    @State private var filterMember: String? = nil  // 參加者篩選（userId）
+    private let labelKeys = ["bright-orange", "emerald", "blue", "red", "purple"]
+    private let labelNames = ["亮橙", "翡翠綠", "藍", "紅", "紫"]
     var mockResults: [MockEvent] {
         q.isEmpty ? Mock.events : Mock.events.filter { $0.title.contains(q) }
+    }
+    // client-side 篩選（標籤 + 參加者）
+    private var filtered: [MTEvent] {
+        liveResults.filter { ev in
+            if let l = filterLabel, ev.labelColor != l { return false }
+            if let m = filterMember, !(ev.participants ?? []).contains(where: { $0.userId == m && $0.status == "going" }) { return false }
+            return true
+        }
     }
     var body: some View {
         PSheet(title: "搜尋活動", onBack: { s.screen = .month }) {
@@ -568,12 +599,40 @@ struct ProtoSearch: View {
             }
             .padding(9).background(Color(.secondarySystemBackground)).clipShape(RoundedRectangle(cornerRadius: 10))
             .padding(.top, 10)
-            Text("指定行程參加者或標籤，即可篩選搜尋。")
-                .font(.caption).foregroundStyle(PT.soft)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.vertical, 8)
+            // 標籤篩選 chips
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    FilterChip(text: "全部標籤", active: filterLabel == nil) { filterLabel = nil }
+                    ForEach(Array(labelKeys.enumerated()), id: \.offset) { i, key in
+                        FilterChip(text: labelNames[i], active: filterLabel == key) { filterLabel = (filterLabel == key) ? nil : key }
+                    }
+                }
+            }
+            .padding(.top, 10)
+            // 參加者篩選 chips（有 RSVP 嘅成員先出現）
+            let memberOptions: [(String, String)] = {
+                var seen = Set<String>()
+                var out: [(String, String)] = []
+                for ev in liveResults {
+                    for p in (ev.participants ?? []) where p.status == "going" && !seen.contains(p.userId) {
+                        seen.insert(p.userId)
+                        out.append((p.userId, p.displayName ?? "成員"))
+                    }
+                }
+                return out
+            }()
+            if !memberOptions.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        FilterChip(text: "全部參加者", active: filterMember == nil) { filterMember = nil }
+                        ForEach(memberOptions, id: \.0) { uid, name in
+                            FilterChip(text: name, active: filterMember == uid) { filterMember = (filterMember == uid) ? nil : uid }
+                        }
+                    }
+                }
+            }
             if s.api != nil {
-                ForEach(liveResults) { ev in
+                ForEach(filtered) { ev in
                     Button { s.screen = .liveEventDetail(ev) } label: {
                         HStack(spacing: 10) {
                             Circle().fill(PT.orange).frame(width: 10, height: 10)
