@@ -34,6 +34,7 @@ function publicCalendar(c: Calendar & { members?: { userId: string; role: string
     id: c.id,
     name: c.name,
     coverImageUrl: c.coverImageUrl,
+    publicSlug: c.publicSlug,
     creatorId: c.creatorId,
     createdAt: c.createdAt,
     memberCount: c.members?.length,

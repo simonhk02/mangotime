@@ -111,6 +111,7 @@ struct MTCalendar: Codable, Identifiable {
     let id: String
     let name: String
     let coverImageUrl: String?
+    let publicSlug: String?
     let creatorId: String
     let memberCount: Int?
     let myRole: String?

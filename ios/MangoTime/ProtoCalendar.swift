@@ -342,9 +342,28 @@ struct ProtoCalendarList: View {
         if s.api != nil { liveList } else { mockList }
     }
 
+    @State private var listTab = 0 // 0=全部 1=共享 2=公開
+    private var filteredCals: [MTCalendar] {
+        switch listTab {
+        case 1: return s.liveCalendars.filter { ($0.memberCount ?? 1) > 1 }
+        case 2: return s.liveCalendars.filter { $0.publicSlug != nil }
+        default: return s.liveCalendars
+        }
+    }
+
     private var liveList: some View {
         PSheet(title: "行事曆清單", onBack: { s.screen = .month }, onRefresh: { await s.loadLive() }, content: {
+            Picker("", selection: $listTab) {
+                Text("全部").tag(0); Text("共享").tag(1); Text("公開").tag(2)
+            }
+            .pickerStyle(.segmented)
+            .padding(.top, 8)
             VStack(spacing: 0) {
+                if filteredCals.isEmpty && !s.liveCalendars.isEmpty {
+                    Text(listTab == 1 ? "未有共享行事曆（邀請成員加入先算共享）" : "未有公開行事曆（喺行事曆設定開公開連結）")
+                        .font(.caption).foregroundStyle(PT.soft)
+                        .frame(maxWidth: .infinity).padding(.vertical, 26)
+                }
                 if s.liveCalendars.isEmpty {
                     // 空態（參考圖 IMG_4684）
                     VStack(spacing: 10) {
@@ -354,7 +373,7 @@ struct ProtoCalendarList: View {
                     }
                     .frame(maxWidth: .infinity).padding(.vertical, 40)
                 }
-                ForEach(s.liveCalendars) { cal in
+                ForEach(filteredCals) { cal in
                     Button {
                         s.activeCalendarId = cal.id
                         Task { await s.loadLive() }
@@ -364,7 +383,18 @@ struct ProtoCalendarList: View {
                             Circle().fill(PT.orange).frame(width: 10, height: 10)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(cal.name).bold(cal.id == s.activeCalendarId).foregroundStyle(.primary)
-                                Text("行事曆").font(.caption).foregroundStyle(PT.soft)
+                                HStack(spacing: 6) {
+                                    if (cal.memberCount ?? 1) > 1 {
+                                        Label("\(cal.memberCount ?? 1)", systemImage: "person.2")
+                                    }
+                                    if cal.publicSlug != nil {
+                                        Label("公開", systemImage: "globe")
+                                    }
+                                    if (cal.memberCount ?? 1) <= 1 && cal.publicSlug == nil {
+                                        Text("個人")
+                                    }
+                                }
+                                .font(.caption).foregroundStyle(PT.soft)
                             }
                             Spacer()
                             if cal.id == s.activeCalendarId { Image(systemName: "checkmark.circle.fill").foregroundStyle(PT.orange) }
