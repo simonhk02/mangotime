@@ -44,6 +44,10 @@ final class MangoTimeUITests: XCTestCase {
         let calButton = app.buttons.matching(NSPredicate(format: "label CONTAINS '行事曆' OR label CONTAINS '▾'")).firstMatch
         XCTAssertTrue(calButton.waitForExistence(timeout: 15), "註冊後應見到月曆頂欄")
         tapAny(calButton)
+        sleep(1)
+        // 頂部 pill 係 dropdown——要撳「行事曆清單…」先入到清單
+        let listItem = app.buttons["行事曆清單…"].firstMatch
+        if listItem.waitForExistence(timeout: 3) { tapAny(listItem); sleep(1) }
 
         // 3) 開行事曆
         let nameField = app.textFields["cal_new_name"]
@@ -101,6 +105,9 @@ final class MangoTimeUITests: XCTestCase {
             let calButton = app.buttons.matching(NSPredicate(format: "label CONTAINS '行事曆' OR label CONTAINS '▾'")).firstMatch
             if calButton.waitForExistence(timeout: 8) {
                 tapAny(calButton)
+                sleep(1)
+                let listItem = app.buttons["行事曆清單…"].firstMatch
+                if listItem.waitForExistence(timeout: 3) { tapAny(listItem); sleep(1) }
                 let nameField = app.textFields["cal_new_name"]
                 if nameField.waitForExistence(timeout: 4) {
                     typeInto(nameField, "MT 日曆")
