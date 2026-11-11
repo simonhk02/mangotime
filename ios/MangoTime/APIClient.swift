@@ -5,6 +5,7 @@ struct MTUser: Codable {
     let email: String
     let displayName: String
     let avatarUrl: String?
+    let birthdate: String?
 }
 
 struct AuthResponse: Codable {
@@ -107,7 +108,7 @@ final class APIClient: ObservableObject {
 
 struct EmptyResponse: Decodable {}
 
-struct MTCalendar: Codable, Identifiable {
+struct MTCalendar: Codable, Identifiable, Hashable {
     let id: String
     let name: String
     let coverImageUrl: String?
@@ -173,6 +174,12 @@ struct MTEvent: Codable, Identifiable, Hashable {
     let updatedAt: String?
 }
 
+struct MTBirthday: Codable, Hashable {
+    let userId: String
+    let displayName: String
+    let birthdate: String // "MM-dd"
+}
+
 struct MTRsvp: Codable, Hashable {
     let userId: String
     let status: String
@@ -184,6 +191,27 @@ struct EventListResponse: Codable { let events: [MTEvent] }
 struct AttachmentListResponse: Codable { let attachments: [MTAttachment] }
 
 extension APIClient {
+    func uploadCover(calendarId: String, data: Data, mimeType: String) async throws {
+        struct P: Encodable { let data: String; let mimeType: String }
+        struct R: Codable { let ok: Bool }
+        let _: R = try await request("POST", "/v1/calendars/\(calendarId)/cover", body: P(data: data.base64EncodedString(), mimeType: mimeType))
+    }
+    func markSeen(calendarId: String) async throws {
+        struct R: Codable { let ok: Bool }
+        let _: R = try await request("POST", "/v1/calendars/\(calendarId)/seen")
+    }
+    func updateMe(displayName: String? = nil, birthdate: String? = nil) async throws {
+        struct P: Encodable { let displayName: String?; let birthdate: String? }
+        struct R: Codable { let user: MTUser }
+        let r: R = try await request("PATCH", "/v1/me", body: P(displayName: displayName, birthdate: birthdate))
+        currentUser = r.user
+    }
+    func listBirthdays(calendarId: String) async throws -> [MTBirthday] {
+        struct R: Codable { let birthdays: [MTBirthday] }
+        let res: R = try await request("GET", "/v1/calendars/\(calendarId)/birthdays")
+        return res.birthdays
+    }
+
     func setRsvp(eventId: String, status: String) async throws {
         struct P: Encodable { let status: String }
         let _: [String: Bool] = try await request("POST", "/v1/events/\(eventId)/rsvp", body: P(status: status))
@@ -261,6 +289,7 @@ struct MTMember: Codable, Identifiable {
     let userId: String
     let role: String
     let color: String?
+    let lastSeenAt: String?
     let displayName: String
     let email: String
     let avatarUrl: String?

@@ -145,6 +145,15 @@ struct ProtoMonthScreen: View {
                 }
                 return show ? DisplayEvent(id: ev.id, title: ev.title, color: labelColor(ev.labelColor), attach: 0, mock: nil, live: ev) : nil
             }
+            // 成員生日（每年 MM-dd 自動上曆）
+            for b in s.liveBirthdays {
+                let parts = b.birthdate.split(separator: "-")
+                if parts.count == 2,
+                   Int(parts[0]) == cal.component(.month, from: cell.date),
+                   Int(parts[1]) == cal.component(.day, from: cell.date) {
+                    out.append(DisplayEvent(id: "bday_\(b.userId)", title: "\(b.displayName)生日", color: PT.purple, attach: 0, mock: nil, live: nil))
+                }
+            }
             // 5.1 外部日曆活動（唯讀，灰色顯示）
             for ext in s.liveExternalEvents {
                 guard let start = parseISODate(ext.startsAt) else { continue }
@@ -519,6 +528,10 @@ struct ProtoCalendarList: View {
                                     .background(PT.red).clipShape(Capsule())
                             }
                             if cal.id == s.activeCalendarId { Image(systemName: "checkmark.circle.fill").foregroundStyle(PT.orange) }
+                            Button { s.screen = .calendarSettings(cal) } label: {
+                                Image(systemName: "gearshape").font(.subheadline).foregroundStyle(PT.soft)
+                            }
+                            .buttonStyle(.plain)
                         }
                         .padding(.vertical, 10)
                         .overlay(Divider().opacity(0.5), alignment: .bottom)

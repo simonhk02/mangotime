@@ -23,6 +23,7 @@ enum ProtoScreen: Hashable {
     case splash, login
     case month, weekly
     case calendarList, monthPicker
+    case calendarSettings(MTCalendar)
     case create, noteEdit
     case editEvent(MTEvent)
     case eventDetail(MockEvent)
@@ -61,6 +62,7 @@ final class ProtoState: ObservableObject {
     @Published var liveMembers: [MTMember] = []
     @Published var inviteCode: String?
     @Published var liveExternalEvents: [MTExternalEvent] = []
+    @Published var liveBirthdays: [MTBirthday] = []
     @Published var displayMonth = Date() // 月曆而家顯示緊邊個月（‹ › 導航）
     var duplicateSource: MTEvent? // 「複製活動」來源（入 create 頁 prefill 用，用完即清）
 
@@ -126,7 +128,11 @@ final class ProtoState: ObservableObject {
                 let to = cal.date(byAdding: .month, value: 1, to: from)!
                 liveEvents = try await api.listEvents(calendarId: calId, from: from, to: to)
                 liveExternalEvents = (try? await api.listExternalEvents(calendarId: calId)) ?? []
+                liveBirthdays = (try? await api.listBirthdays(calendarId: calId)) ?? []
                 syncWidget()
+                // 「查看過」server 端記錄（對方最後查看時間用）
+                try? await api.markSeen(calendarId: calId)
+                markCalendarSeen(calId)
             }
         } catch {
             note("載入失敗：\(error.localizedDescription)")
@@ -607,6 +613,7 @@ struct ProtoContent: View {
             switch screen {
             case .month, .weekly: ProtoMonthScreen()
             case .calendarList: ProtoCalendarList()
+            case .calendarSettings(let cal): ProtoCalendarSettings(cal: cal)
             case .monthPicker: ProtoMonthPicker()
             case .create: ProtoEventForm()
             case .editEvent(let ev): ProtoEventForm(editing: ev)

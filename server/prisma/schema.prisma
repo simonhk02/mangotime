@@ -13,6 +13,7 @@ model User {
   email        String    @unique
   displayName  String
   avatarUrl    String?
+  birthdate String? // "MM-dd" 生日（成員生日自動上曆）
   passwordHash String? // social-only 帳可以冇密碼
   createdAt    DateTime  @default(now())
   sessions     Session[]
@@ -94,6 +95,7 @@ model CalendarMember {
   user       User     @relation("Memberships", fields: [userId], references: [id], onDelete: Cascade)
   role       String   // "creator" | "member"
   color      String?  // 每成員顏色（emerald/blue/red/purple/bright-orange）
+  lastSeenAt DateTime? // 「對方何時查看過」
   createdAt  DateTime @default(now())
 
   @@unique([calendarId, userId])

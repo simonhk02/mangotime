@@ -13,7 +13,7 @@ function tokenHash(token: string): string {
 }
 
 export function publicUser(u: User) {
-  return { id: u.id, email: u.email, displayName: u.displayName, avatarUrl: u.avatarUrl, createdAt: u.createdAt };
+  return { id: u.id, email: u.email, displayName: u.displayName, avatarUrl: u.avatarUrl, birthdate: u.birthdate, createdAt: u.createdAt };
 }
 
 /** Resolve Bearer token → User or null. */
@@ -95,13 +95,17 @@ export function registerAuthRoutes(app: FastifyInstance, prisma: PrismaClient) {
   app.patch("/v1/me", async (req, reply) => {
     const user = await userFromRequest(prisma, req);
     if (!user) return reply.code(401).send({ error: "unauthorized" });
-    const body = (req.body ?? {}) as { displayName?: string; avatarUrl?: string | null };
-    const data: { displayName?: string; avatarUrl?: string | null } = {};
+    const body = (req.body ?? {}) as { displayName?: string; avatarUrl?: string | null; birthdate?: string | null };
+    const data: { displayName?: string; avatarUrl?: string | null; birthdate?: string | null } = {};
     if (body.displayName !== undefined) {
       if (!body.displayName.trim()) return reply.code(400).send({ error: "displayName cannot be empty" });
       data.displayName = body.displayName.trim();
     }
     if (body.avatarUrl !== undefined) data.avatarUrl = body.avatarUrl;
+    if (body.birthdate !== undefined) {
+      if (body.birthdate !== null && !/^\d{2}-\d{2}$/.test(body.birthdate)) return reply.code(400).send({ error: "birthdate must be MM-dd" });
+      data.birthdate = body.birthdate;
+    }
     if (Object.keys(data).length === 0) return reply.code(400).send({ error: "nothing to update" });
     const updated = await prisma.user.update({ where: { id: user.id }, data });
     return { user: publicUser(updated) };

@@ -434,6 +434,10 @@ struct ShareSheet: UIViewControllerRepresentable {
 
 struct ProtoProfile: View {
     @EnvironmentObject var s: ProtoState
+    @State private var editingName = false
+    @State private var nameDraft = ""
+    @State private var birthday = Date()
+    @State private var birthdayOn = false
     var body: some View {
         let user = s.api?.currentUser
         let name = user?.displayName ?? "阿文"
@@ -446,8 +450,45 @@ struct ProtoProfile: View {
                 Text(email).font(.caption).foregroundStyle(PT.soft)
             }
             .frame(maxWidth: .infinity).padding(.vertical, 18)
-            PRow(label: "名稱", value: name) { s.note("改名（mock）") }
+            .onAppear {
+                if let bd = s.api?.currentUser?.birthdate {
+                    birthdayOn = true
+                    let f = DateFormatter(); f.dateFormat = "MM-dd"
+                    // 用今年嘅日期裝返個 Date
+                    let y = Calendar.current.component(.year, from: Date())
+                    var c = DateComponents(); c.year = y
+                    c.month = Int(bd.prefix(2)); c.day = Int(bd.suffix(2))
+                    if let d = Calendar.current.date(from: c) { birthday = d }
+                }
+            }
+            if editingName {
+                HStack {
+                    TextField("名稱", text: $nameDraft).textFieldStyle(.roundedBorder)
+                    Button("保存") {
+                        editingName = false
+                        Task { try? await s.api?.updateMe(displayName: nameDraft); s.note("已更新 ✓") }
+                    }.foregroundStyle(PT.orange).bold()
+                }
+            } else {
+                PRow(label: "名稱", value: name) {
+                    nameDraft = name
+                    editingName = true
+                }
+            }
             PRow(label: "電郵", value: email)
+            // 生日（成員生日自動上曆）
+            VStack(alignment: .leading, spacing: 6) {
+                PRow(label: "生日", toggle: $birthdayOn)
+                if birthdayOn {
+                    DatePicker("生日", selection: $birthday, displayedComponents: .date)
+                        .datePickerStyle(.compact)
+                        .labelsHidden()
+                        .onChange(of: birthday) { _, d in
+                            let f = DateFormatter(); f.dateFormat = "MM-dd"
+                            Task { try? await s.api?.updateMe(birthdate: f.string(from: d)); s.note("生日已保存 ✓") }
+                        }
+                }
+            }
             PRow(label: "連結帳戶", value: "Google · Apple") { s.note("連結帳戶（mock）") }
             Button {
                 if s.api != nil {
@@ -910,7 +951,13 @@ struct ProtoMembers: View {
                     .buttonStyle(.plain)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(m.displayName).bold()
-                        Text(m.role == "creator" ? "建立者" : "成員").font(.caption).foregroundStyle(PT.soft)
+                        HStack(spacing: 6) {
+                            Text(m.role == "creator" ? "建立者" : "成員")
+                            if let seen = m.lastSeenAt, let d = parseISODate(seen) {
+                                Text("· 最後查看 \(relTimeText(d))")
+                            }
+                        }
+                        .font(.caption).foregroundStyle(PT.soft)
                     }
                     Spacer()
                     // creator 可以踢人（唔係自己）
@@ -1049,4 +1096,14 @@ struct ProtoInvite: View {
             .padding(.top, 16)
         }
     }
+}
+
+
+/// 相對時間（x 分鐘前）
+func relTimeText(_ d: Date) -> String {
+    let diff = Date().timeIntervalSince(d)
+    if diff < 60 { return "啱啱" }
+    if diff < 3600 { return "\(Int(diff/60)) 分鐘前" }
+    if diff < 86400 { return "\(Int(diff/3600)) 小時前" }
+    return "\(Int(diff/86400)) 日前"
 }

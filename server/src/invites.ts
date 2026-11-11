@@ -102,6 +102,7 @@ export function registerInviteRoutes(app: FastifyInstance, prisma: PrismaClient)
         userId: m.userId,
         role: m.role,
         color: m.color,
+        lastSeenAt: m.lastSeenAt,
         displayName: m.user.displayName,
         email: m.user.email,
         avatarUrl: m.user.avatarUrl,
