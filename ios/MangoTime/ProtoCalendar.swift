@@ -468,6 +468,10 @@ struct ProtoCalendarList: View {
 
     @State private var listTab = 0 // 0=全部 1=共享 2=公開
     @State private var editOrder = false
+    @State private var discovery: [MTPublicCal] = []
+    private func loadDiscovery() async {
+        discovery = (try? await s.api?.publicDirectory()) ?? []
+    }
 
     private func moveCal(_ idx: Int, _ dir: Int) {
         var cals = s.liveCalendars
@@ -486,7 +490,7 @@ struct ProtoCalendarList: View {
     }
 
     private var liveList: some View {
-        PSheet(title: "行事曆清單", onBack: { s.screen = .month }, onRefresh: { await s.loadLive() }, content: {
+        PSheet(title: "行事曆清單", onBack: { s.screen = .month }, onRefresh: { await s.loadLive(); await loadDiscovery() }, content: {
             HStack {
                 Picker("", selection: $listTab) {
                     Text("全部").tag(0); Text("共享").tag(1); Text("公開").tag(2)
@@ -505,6 +509,54 @@ struct ProtoCalendarList: View {
                     Text(listTab == 1 ? "未有共享行事曆（邀請成員加入先算共享）" : "未有公開行事曆（喺行事曆設定開公開連結）")
                         .font(.caption).foregroundStyle(PT.soft)
                         .frame(maxWidth: .infinity).padding(.vertical, 26)
+                }
+                // 公開 tab：「發現公開行事曆」區（TimeTree Recommended Public Calendars）
+                if listTab == 2 && s.api != nil {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("發現公開行事曆").font(.caption).foregroundStyle(PT.soft)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 16).padding(.bottom, 6)
+                        ForEach(discovery) { pc in
+                            HStack(spacing: 10) {
+                                Circle().fill(PT.purple).frame(width: 10, height: 10)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(pc.name).foregroundStyle(.primary)
+                                    Text("\(pc.eventCount) 活動 · \(pc.memberCount) 成員 · \(pc.likeCount) 讚")
+                                        .font(.caption2).foregroundStyle(PT.soft)
+                                }
+                                Spacer()
+                                // 按讚
+                                Button {
+                                    Task {
+                                        if pc.liked { try? await s.api?.unlikePublic(slug: pc.slug) }
+                                        else { try? await s.api?.likePublic(slug: pc.slug) }
+                                        await loadDiscovery()
+                                    }
+                                } label: {
+                                    Image(systemName: pc.liked ? "heart.fill" : "heart")
+                                        .foregroundStyle(pc.liked ? PT.red : PT.soft)
+                                }
+                                .buttonStyle(.plain)
+                                // 抄入自己曆
+                                Button {
+                                    Task {
+                                        _ = try? await s.api?.copyPublic(slug: pc.slug)
+                                        await s.loadLive()
+                                        s.note("已抄入你嘅行事曆 ✓")
+                                    }
+                                } label: {
+                                    Image(systemName: "plus.circle").foregroundStyle(PT.orange)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .padding(.vertical, 10)
+                            .overlay(Divider().opacity(0.5), alignment: .bottom)
+                        }
+                        if discovery.isEmpty {
+                            Text("載入緊／暫時冇公開行事曆").font(.caption2).foregroundStyle(PT.soft)
+                                .padding(.vertical, 10)
+                        }
+                    }
                 }
                 if s.liveCalendars.isEmpty {
                     // 空態（參考圖 IMG_4684）
@@ -584,6 +636,7 @@ struct ProtoCalendarList: View {
             .padding(.top, 8)
             Divider().padding(.vertical, 10)
             Text("用邀請碼加入").font(.caption).foregroundStyle(PT.soft)
+                .onAppear { Task { await loadDiscovery() } }
                 .frame(maxWidth: .infinity, alignment: .leading)
             HStack {
                 TextField("邀請碼（例如 9I7J3FIGNWK）", text: $joinCode).textFieldStyle(.roundedBorder)

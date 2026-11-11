@@ -1,5 +1,6 @@
 // 公開唯讀月曆頁：/public/:slug（唔使登入）
 import { useEffect, useMemo, useState } from "react";
+import { getToken } from "./api";
 import { lunarShort } from "./lunar";
 
 const API = "https://mangotime-api.149-28-154-219.sslip.io";
@@ -23,6 +24,18 @@ export default function PublicView({ slug }: { slug: string }) {
   const [name, setName] = useState("");
   const [events, setEvents] = useState<PubEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [liked, setLiked] = useState(false);
+  const [msg, setMsg] = useState("");
+  const authed = !!getToken();
+
+  async function like() {
+    const res = await fetch(`${API}/v1/public/${slug}/like`, { method: liked ? "DELETE" : "POST", headers: { Authorization: `Bearer ${getToken()}` } });
+    if (res.ok) { setLiked(!liked); setMsg(liked ? "" : "已按讚 ❤"); }
+  }
+  async function copy() {
+    const res = await fetch(`${API}/v1/public/${slug}/copy`, { method: "POST", headers: { Authorization: `Bearer ${getToken()}` } });
+    if (res.ok) setMsg("已抄入你嘅行事曆 ✓（返主頁就見到）");
+  }
   const today = new Date();
   const WD = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
 
@@ -84,6 +97,17 @@ export default function PublicView({ slug }: { slug: string }) {
         <div className="pub-logo">🥭</div>
         <div>
           <h1>{name}</h1>
+      {authed && (
+        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+          <button onClick={like} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid #f97316", background: liked ? "#f97316" : "transparent", color: liked ? "#fff" : "#f97316", fontWeight: 600, cursor: "pointer" }}>
+            {liked ? "已讚 ♥" : "讚 ♡"}
+          </button>
+          <button onClick={copy} style={{ padding: "6px 14px", borderRadius: 999, border: "1px solid #f97316", background: "transparent", color: "#f97316", fontWeight: 600, cursor: "pointer" }}>
+            ＋ 加到我嘅行事曆
+          </button>
+        </div>
+      )}
+      {msg && <div style={{ fontSize: 12, color: "#16a34a", marginTop: 6 }}>{msg}</div>}
           <p className="pub-sub">MangoTime 公開行事曆 · 唯讀</p>
         </div>
       </header>

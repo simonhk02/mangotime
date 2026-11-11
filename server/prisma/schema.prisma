@@ -323,3 +323,13 @@ model ChildMember {
   birthdate  String?  // "MM-dd"
   createdAt  DateTime @default(now())
 }
+
+model PublicLike {
+  id         String   @id @default(cuid())
+  publicSlug String
+  userId     String
+  createdAt  DateTime @default(now())
+
+  @@unique([publicSlug, userId])
+  @@index([userId])
+}

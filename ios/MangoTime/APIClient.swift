@@ -182,6 +182,17 @@ struct MTChild: Codable, Identifiable, Hashable {
     let birthdate: String?
 }
 
+struct MTPublicCal: Codable, Identifiable {
+    let slug: String
+    let name: String
+    let coverImageUrl: String?
+    let eventCount: Int
+    let memberCount: Int
+    let likeCount: Int
+    let liked: Bool
+    var id: String { slug }
+}
+
 struct MTBirthday: Codable, Hashable {
     let userId: String
     let displayName: String
@@ -243,6 +254,25 @@ extension APIClient {
         struct P: Encodable { let notify: Bool }
         struct R: Codable { let ok: Bool }
         let _: R = try await request("PATCH", "/v1/calendars/\(calendarId)/notify", body: P(notify: notify))
+    }
+
+    func publicDirectory() async throws -> [MTPublicCal] {
+        struct R: Codable { let calendars: [MTPublicCal] }
+        let res: R = try await request("GET", "/v1/public-directory")
+        return res.calendars
+    }
+    func likePublic(slug: String) async throws {
+        struct R: Codable { let ok: Bool }
+        let _: R = try await request("POST", "/v1/public/\(slug)/like")
+    }
+    func unlikePublic(slug: String) async throws {
+        struct R: Codable { let ok: Bool }
+        let _: R = try await request("DELETE", "/v1/public/\(slug)/like")
+    }
+    func copyPublic(slug: String) async throws -> String {
+        struct R: Codable { let calendarId: String }
+        let res: R = try await request("POST", "/v1/public/\(slug)/copy")
+        return res.calendarId
     }
 
     func setRsvp(eventId: String, status: String) async throws {
