@@ -112,6 +112,16 @@ final class MangoTimeUITests: XCTestCase {
             }
         }
 
+        // 狀態 reset：前一個 test 可能留咗喺 sheet/子頁——撳返主 tab 先
+        for _ in 0..<4 {
+            if app.buttons["tab_other"].exists { break }
+            let back = app.buttons.matching(NSPredicate(format: "label == '‹' OR label == '×'")).firstMatch
+            if back.exists { tapAny(back); sleep(1) } else { break }
+        }
+        if !app.buttons["tab_other"].exists {
+            tapAny(app.buttons["tab_calendar"]); sleep(1)
+        }
+
         // 備忘錄：其他 → 備忘錄 → 開新
         tapAny(app.buttons["tab_other"])
         sleep(1)
