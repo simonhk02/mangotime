@@ -506,6 +506,7 @@ struct MTPhoto: Codable, Identifiable, Hashable {
     let size: Int
     let uploaderId: String
     let uploaderName: String
+    let createdAt: String?
 }
 struct MTPhotoWrap: Codable { let photo: MTPhoto }
 struct MTPhotoList: Codable { let photos: [MTPhoto] }

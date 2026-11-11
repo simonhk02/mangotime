@@ -47,6 +47,7 @@ final class ProtoState: ObservableObject {
     @Published var weekNumbersOn = UserDefaults.standard.bool(forKey: "week_numbers") { didSet { UserDefaults.standard.set(weekNumbersOn, forKey: "week_numbers") } }
     @Published var holidaysOn = UserDefaults.standard.bool(forKey: "holidays_on") { didSet { UserDefaults.standard.set(holidaysOn, forKey: "holidays_on") } }
     @Published var hour24 = UserDefaults.standard.object(forKey: "hour24") == nil ? true : UserDefaults.standard.bool(forKey: "hour24") { didSet { UserDefaults.standard.set(hour24, forKey: "hour24") } }
+    @Published var fontSizeIdx = UserDefaults.standard.integer(forKey: "font_size_idx") { didSet { UserDefaults.standard.set(fontSizeIdx, forKey: "font_size_idx") } } // 0=小 1=中 2=大
     @Published var hiddenCalendarIds: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "hidden_cals") ?? []) { didSet { UserDefaults.standard.set(Array(hiddenCalendarIds), forKey: "hidden_cals") } }
     @Published var settingsTab = 0 // 0=設定 1=支援
     @Published var feedTab = 0 // 0=行程 1=相簿

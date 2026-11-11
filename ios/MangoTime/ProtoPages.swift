@@ -865,8 +865,13 @@ struct ProtoAlbum: View {
             if livePhotos.isEmpty {
                 EmptyState(icon: "photo.on.rectangle", title: "仲未有相。", sub: "撳右上 ＋ 上傳第一張。")
             }
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
-                ForEach(livePhotos) { p in
+            // 按月分組（TimeTree 相簿 feed 式）
+            ForEach(photoMonthGroups, id: \.0) { group in
+                Text(group.0).font(.caption).bold().foregroundStyle(PT.soft)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 10)
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
+                    ForEach(group.1) { p in
                     AsyncImage(url: s.api?.fileURL(p.url)) { phase in
                         switch phase {
                         case .success(let img):
@@ -876,22 +881,39 @@ struct ProtoAlbum: View {
                         }
                     }
                     .frame(maxWidth: .infinity).aspectRatio(1, contentMode: .fit)
-                    .clipped()
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .onLongPressGesture {
-                        guard p.uploaderId == s.api?.currentUser?.id else { return }
-                        busyId = p.id
-                        Task {
-                            try? await s.api?.deletePhoto(id: p.id)
-                            await reload()
-                            s.note("已刪除 ✓")
+                        .clipped()
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .onLongPressGesture {
+                            guard p.uploaderId == s.api?.currentUser?.id else { return }
+                            busyId = p.id
+                            Task {
+                                try? await s.api?.deletePhoto(id: p.id)
+                                await reload()
+                                s.note("已刪除 ✓")
+                            }
                         }
                     }
                 }
+                .padding(.top, 4)
             }
-            .padding(.top, 10)
         }
         .onAppear { Task { await reload() } }
+    }
+
+    // "2026年11月" → [photos]（相簿按月分組）
+    private var photoMonthGroups: [(String, [MTPhoto])] {
+        var groups: [(String, [MTPhoto])] = []
+        var key = ""
+        for p in livePhotos {
+            var label = "早前"
+            if let iso = p.createdAt, let d = parseISODate(iso) {
+                let f = DateFormatter(); f.locale = Locale(identifier: "zh_HK"); f.dateFormat = "yyyy年M月"
+                label = f.string(from: d)
+            }
+            if label != key { key = label; groups.append((label, [])) }
+            groups[groups.count - 1].1.append(p)
+        }
+        return groups
     }
 
     private var mockAlbum: some View {
