@@ -286,6 +286,7 @@ struct ProtoOther: View {
                         PRow(icon: "photo.on.rectangle", label: "相簿") { s.screen = .album }
                         PRow(icon: "person.2", label: "成員") { s.screen = .members }
                         PRow(icon: "link", label: "訂閱外部日曆") { s.screen = .extSubscribe }
+                        PRow(icon: "square.and.arrow.up", label: "分享有空嘅日子") { s.screen = .availability }
                     }
                     PCard {
                         PRow(icon: "gearshape", label: "App 設定") { s.screen = .settings }

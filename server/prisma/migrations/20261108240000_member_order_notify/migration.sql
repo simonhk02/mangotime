@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "CalendarMember" ADD COLUMN "sortOrder" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "CalendarMember" ADD COLUMN "notify" BOOLEAN NOT NULL DEFAULT true;

@@ -467,6 +467,16 @@ struct ProtoCalendarList: View {
     }
 
     @State private var listTab = 0 // 0=全部 1=共享 2=公開
+    @State private var editOrder = false
+
+    private func moveCal(_ idx: Int, _ dir: Int) {
+        var cals = s.liveCalendars
+        let target = idx + dir
+        guard target >= 0, target < cals.count else { return }
+        cals.swapAt(idx, target)
+        s.liveCalendars = cals
+        Task { try? await s.api?.reorderCalendars(ids: cals.map { $0.id }) }
+    }
     private var filteredCals: [MTCalendar] {
         switch listTab {
         case 1: return s.liveCalendars.filter { ($0.memberCount ?? 1) > 1 }
@@ -477,10 +487,18 @@ struct ProtoCalendarList: View {
 
     private var liveList: some View {
         PSheet(title: "行事曆清單", onBack: { s.screen = .month }, onRefresh: { await s.loadLive() }, content: {
-            Picker("", selection: $listTab) {
-                Text("全部").tag(0); Text("共享").tag(1); Text("公開").tag(2)
+            HStack {
+                Picker("", selection: $listTab) {
+                    Text("全部").tag(0); Text("共享").tag(1); Text("公開").tag(2)
+                }
+                .pickerStyle(.segmented)
+                Button {
+                    withAnimation { editOrder.toggle() }
+                } label: {
+                    Text(editOrder ? "完成" : "排列").font(.caption).bold().foregroundStyle(PT.orange)
+                        .padding(.horizontal, 8).padding(.vertical, 5)
+                }
             }
-            .pickerStyle(.segmented)
             .padding(.top, 8)
             VStack(spacing: 0) {
                 if filteredCals.isEmpty && !s.liveCalendars.isEmpty {
@@ -497,7 +515,30 @@ struct ProtoCalendarList: View {
                     }
                     .frame(maxWidth: .infinity).padding(.vertical, 40)
                 }
-                ForEach(filteredCals) { cal in
+                ForEach(Array(filteredCals.enumerated()), id: \.element.id) { idx, cal in
+                    if editOrder {
+                        HStack(spacing: 12) {
+                            VStack(spacing: 4) {
+                                Button { moveCal(idx, -1) } label: { Image(systemName: "chevron.up").font(.caption).foregroundStyle(idx == 0 ? PT.soft.opacity(0.4) : PT.orange) }
+                                Button { moveCal(idx, 1) } label: { Image(systemName: "chevron.down").font(.caption).foregroundStyle(idx == filteredCals.count - 1 ? PT.soft.opacity(0.4) : PT.orange) }
+                            }
+                            Text(cal.name).foregroundStyle(.primary)
+                            Spacer()
+                            // per-calendar 通知開關
+                            Button {
+                                Task {
+                                    try? await s.api?.setCalendarNotify(calendarId: cal.id, notify: !(cal.notify ?? true))
+                                    await s.loadLive()
+                                }
+                            } label: {
+                                Image(systemName: (cal.notify ?? true) ? "bell.fill" : "bell.slash")
+                                    .font(.subheadline).foregroundStyle((cal.notify ?? true) ? PT.orange : PT.soft)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(.vertical, 12)
+                        .overlay(Divider().opacity(0.5), alignment: .bottom)
+                    } else {
                     Button {
                         s.activeCalendarId = cal.id
                         s.markCalendarSeen(cal.id)
@@ -537,6 +578,7 @@ struct ProtoCalendarList: View {
                         .overlay(Divider().opacity(0.5), alignment: .bottom)
                     }
                     .buttonStyle(.plain)
+                    }
                 }
             }
             .padding(.top, 8)

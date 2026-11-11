@@ -98,6 +98,8 @@ model CalendarMember {
   role       String   // "creator" | "member"
   color      String?  // 每成員顏色（emerald/blue/red/purple/bright-orange）
   lastSeenAt DateTime? // 「對方何時查看過」
+  sortOrder  Int      @default(0)   // 行事曆排列次序
+  notify     Boolean  @default(true) // per-calendar 推送開關
   createdAt  DateTime @default(now())
 
   @@unique([calendarId, userId])

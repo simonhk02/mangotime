@@ -75,11 +75,34 @@ export function registerCalendarRoutes(app: FastifyInstance, prisma: PrismaClien
     const memberships = await prisma.calendarMember.findMany({
       where: { userId: user.id },
       include: { calendar: { include: { members: true } } },
-      orderBy: { createdAt: "asc" },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     });
     return {
-      calendars: memberships.map((m) => publicCalendar(m.calendar, m.role)),
+      calendars: memberships.map((m) => ({ ...publicCalendar(m.calendar, m.role), notify: m.notify })),
     };
+  });
+
+  // 重新排列：PATCH /v1/calendars/order { ids: [calId...] }（位置 = sortOrder）
+  app.patch("/v1/calendars/order", async (req, reply) => {
+    const user = await requireUser({ prisma, req, reply });
+    if (!user) return;
+    const { ids } = (req.body ?? {}) as { ids?: string[] };
+    if (!Array.isArray(ids)) return reply.code(400).send({ error: "ids required" });
+    await Promise.all(ids.map((calId, i) =>
+      prisma.calendarMember.updateMany({ where: { calendarId: calId, userId: user.id }, data: { sortOrder: i } })
+    ));
+    return { ok: true };
+  });
+
+  // per-calendar 推送開關：PATCH /v1/calendars/:id/notify { notify: bool }
+  app.patch("/v1/calendars/:id/notify", async (req, reply) => {
+    const user = await requireUser({ prisma, req, reply });
+    if (!user) return;
+    const { id } = req.params as { id: string };
+    const { notify } = (req.body ?? {}) as { notify?: boolean };
+    if (typeof notify !== "boolean") return reply.code(400).send({ error: "notify required" });
+    await prisma.calendarMember.updateMany({ where: { calendarId: id, userId: user.id }, data: { notify } });
+    return { ok: true };
   });
 
   // Get one calendar (members only).

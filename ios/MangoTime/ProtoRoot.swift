@@ -33,6 +33,7 @@ enum ProtoScreen: Hashable {
     case memos, memosEmpty, memoDetail(MockMemo), liveMemoDetail(MTMemo)
     case todos, album, members, invite
     case extSubscribe
+    case availability
     case settings, displaySettings, filterSettings, displayCalendar, widgetCalendar, notifSettings
     case noticeBoard, noticeDetail
     case premium, premiumDetail
@@ -634,6 +635,7 @@ struct ProtoContent: View {
             case .members: ProtoMembers()
             case .invite: ProtoInvite()
             case .extSubscribe: ProtoExtSubscribe()
+            case .availability: ProtoAvailability()
             case .settings: ProtoSettings()
             case .displaySettings: ProtoDisplaySettings()
             case .filterSettings: ProtoFilterSettings()

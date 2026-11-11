@@ -117,6 +117,7 @@ struct MTCalendar: Codable, Identifiable, Hashable {
     let creatorId: String
     let memberCount: Int?
     let myRole: String?
+    let notify: Bool?
 }
 
 struct CalendarResponse: Codable { let calendar: MTCalendar }
@@ -231,6 +232,17 @@ extension APIClient {
         struct R: Codable { let birthdays: [MTBirthday] }
         let res: R = try await request("GET", "/v1/calendars/\(calendarId)/birthdays")
         return res.birthdays
+    }
+
+    func reorderCalendars(ids: [String]) async throws {
+        struct P: Encodable { let ids: [String] }
+        struct R: Codable { let ok: Bool }
+        let _: R = try await request("PATCH", "/v1/calendars/order", body: P(ids: ids))
+    }
+    func setCalendarNotify(calendarId: String, notify: Bool) async throws {
+        struct P: Encodable { let notify: Bool }
+        struct R: Codable { let ok: Bool }
+        let _: R = try await request("PATCH", "/v1/calendars/\(calendarId)/notify", body: P(notify: notify))
     }
 
     func setRsvp(eventId: String, status: String) async throws {

@@ -90,3 +90,22 @@ test("digestTime：PATCH /v1/me set HH:MM → me 見到；壞格式 400", async 
   assert.equal(ok.statusCode, 200);
   assert.equal(ok.json().user.digestTime, "07:30");
 });
+
+test("重排行事曆 + per-calendar 通知開關", async () => {
+  const t1 = await signup("ord1@test.com", "O");
+  const mk = async (n: string) => (await app.inject({ method: "POST", url: "/v1/calendars", headers: { authorization: `Bearer ${t1}` }, payload: { name: n } })).json().calendar.id;
+  const a = await mk("AAA"), b = await mk("BBB"), c = await mk("CCC");
+  // 原本順序 = 開立順序
+  const l1 = await app.inject({ method: "GET", url: "/v1/calendars", headers: { authorization: `Bearer ${t1}` } });
+  assert.deepEqual(l1.json().calendars.map((x: any) => x.name), ["AAA", "BBB", "CCC"]);
+  // reorder：CCC 擺頭
+  const re = await app.inject({ method: "PATCH", url: "/v1/calendars/order", headers: { authorization: `Bearer ${t1}` }, payload: { ids: [c, a, b] } });
+  assert.equal(re.statusCode, 200);
+  const l2 = await app.inject({ method: "GET", url: "/v1/calendars", headers: { authorization: `Bearer ${t1}` } });
+  assert.deepEqual(l2.json().calendars.map((x: any) => x.name), ["CCC", "AAA", "BBB"]);
+  // notify 閂
+  const nt = await app.inject({ method: "PATCH", url: `/v1/calendars/${a}/notify`, headers: { authorization: `Bearer ${t1}` }, payload: { notify: false } });
+  assert.equal(nt.statusCode, 200);
+  const l3 = await app.inject({ method: "GET", url: "/v1/calendars", headers: { authorization: `Bearer ${t1}` } });
+  assert.equal(l3.json().calendars.find((x: any) => x.id === a).notify, false);
+});

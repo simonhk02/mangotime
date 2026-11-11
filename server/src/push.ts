@@ -137,8 +137,8 @@ export async function dispatchPush(prisma: PrismaClient, type: string, aggregate
   const text = pushText(type, payload, actor?.displayName ?? "有成員");
   if (!text) return;
 
-  // 行事曆成員（除咗 actor 自己）嘅所有 device
-  const members = await prisma.calendarMember.findMany({ where: { calendarId: aggregateId, userId: { not: actorId } } });
+  // 行事曆成員（除咗 actor 自己、閂咗通知嗰啲）嘅所有 device
+  const members = await prisma.calendarMember.findMany({ where: { calendarId: aggregateId, userId: { not: actorId }, notify: true } });
   if (members.length === 0) return;
   const devices = await prisma.device.findMany({ where: { userId: { in: members.map((m) => m.userId) } } });
   if (devices.length === 0) return;
