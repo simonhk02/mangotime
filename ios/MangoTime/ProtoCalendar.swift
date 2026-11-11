@@ -157,6 +157,8 @@ struct ProtoMonthScreen: View {
                     out.append(DisplayEvent(id: ext.id, title: ext.title, color: PT.soft, attach: 0, mock: nil, live: nil))
                 }
             }
+            // 釘選優先（TimeTree 釘選功能）
+            out.sort { ($0.live?.pinned ?? false) && !($1.live?.pinned ?? false) }
             return out
         }
         let d = cal.component(.day, from: cell.date)
@@ -376,6 +378,7 @@ struct ProtoCalendarList: View {
                 ForEach(filteredCals) { cal in
                     Button {
                         s.activeCalendarId = cal.id
+                        s.markCalendarSeen(cal.id)
                         Task { await s.loadLive() }
                         s.screen = .month
                     } label: {
@@ -397,6 +400,11 @@ struct ProtoCalendarList: View {
                                 .font(.caption).foregroundStyle(PT.soft)
                             }
                             Spacer()
+                            if s.calendarHasUnseen(cal) {
+                                Text("NEW").font(.system(size: 9, weight: .bold)).foregroundStyle(.white)
+                                    .padding(.horizontal, 6).padding(.vertical, 2)
+                                    .background(PT.red).clipShape(Capsule())
+                            }
                             if cal.id == s.activeCalendarId { Image(systemName: "checkmark.circle.fill").foregroundStyle(PT.orange) }
                         }
                         .padding(.vertical, 10)

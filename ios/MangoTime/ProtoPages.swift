@@ -870,6 +870,19 @@ struct ProtoAlbum: View {
     }
 }
 
+
+/// 成員顏色字串 → Color（同 label 色共用）
+func memberColor(_ key: String?, fallback: Color) -> Color {
+    switch key {
+    case "bright-orange": return PT.orange
+    case "emerald": return PT.green
+    case "blue": return PT.blue
+    case "red": return PT.red
+    case "purple": return PT.purple
+    default: return fallback
+    }
+}
+
 struct ProtoMembers: View {
     @EnvironmentObject var s: ProtoState
     private let colors: [Color] = [PT.orange, PT.green, PT.blue, PT.purple, PT.red]
@@ -881,13 +894,38 @@ struct ProtoMembers: View {
         PSheet(title: "成員（\(s.liveMembers.count)）", onBack: { s.screen = .other }, onRefresh: { await s.loadMembers() }) {
             ForEach(Array(s.liveMembers.enumerated()), id: \.element.id) { i, m in
                 HStack(spacing: 12) {
-                    Circle().fill(colors[i % colors.count]).frame(width: 36, height: 36)
-                        .overlay(Text(String(m.displayName.prefix(1))).foregroundStyle(.white).bold())
+                    // 成員顏色：自己可以撳嚟轉色
+                    Button {
+                        guard m.userId == s.api?.currentUser?.id else { return }
+                        let order: [String] = ["bright-orange", "emerald", "blue", "red", "purple"]
+                        let next = order[(order.firstIndex(of: m.color ?? "bright-orange") ?? -1 + 1) % order.count]
+                        Task {
+                            try? await s.api?.setMemberColor(calendarId: s.activeCalendarId ?? "", userId: m.userId, color: next)
+                            await s.loadMembers()
+                        }
+                    } label: {
+                        Circle().fill(memberColor(m.color, fallback: colors[i % colors.count])).frame(width: 36, height: 36)
+                            .overlay(Text(String(m.displayName.prefix(1))).foregroundStyle(.white).bold())
+                    }
+                    .buttonStyle(.plain)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(m.displayName).bold()
                         Text(m.role == "creator" ? "建立者" : "成員").font(.caption).foregroundStyle(PT.soft)
                     }
                     Spacer()
+                    // creator 可以踢人（唔係自己）
+                    if s.liveMembers.first(where: { $0.userId == s.api?.currentUser?.id })?.role == "creator" && m.userId != s.api?.currentUser?.id {
+                        Button {
+                            Task {
+                                try? await s.api?.removeMember(calendarId: s.activeCalendarId ?? "", userId: m.userId)
+                                await s.loadMembers()
+                                s.note("已移除 \(m.displayName)")
+                            }
+                        } label: {
+                            Image(systemName: "person.badge.minus").foregroundStyle(PT.soft)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
                 .padding(.vertical, 10)
                 .overlay(Divider().opacity(0.5), alignment: .bottom)

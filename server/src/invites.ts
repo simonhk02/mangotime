@@ -101,6 +101,7 @@ export function registerInviteRoutes(app: FastifyInstance, prisma: PrismaClient)
       members: members.map((m) => ({
         userId: m.userId,
         role: m.role,
+        color: m.color,
         displayName: m.user.displayName,
         email: m.user.email,
         avatarUrl: m.user.avatarUrl,
@@ -120,5 +121,21 @@ export function registerInviteRoutes(app: FastifyInstance, prisma: PrismaClient)
     await prisma.calendarMember.deleteMany({ where: { calendarId: id, userId } });
     await emitEvent(prisma, "calendar.member_removed", id, { userId, actorId: user.id });
     return reply.code(204).send();
+  });
+
+  // 每成員顏色（自己改自己；creator 可以改任何人）
+  app.patch("/v1/calendars/:id/members/:userId/color", async (req, reply) => {
+    const user = await requireUser(prisma, req, reply);
+    if (!user) return;
+    const { id, userId } = req.params as { id: string; userId: string };
+    const me = await requireMember(prisma, id, user.id);
+    if (!me) return reply.code(404).send({ error: "calendar not found" });
+    if (userId !== user.id && me.role !== "creator") return reply.code(403).send({ error: "creator only" });
+    const { color } = (req.body ?? {}) as { color?: string | null };
+    if (color !== null && color !== undefined && (typeof color !== "string" || color.length > 30)) {
+      return reply.code(400).send({ error: "bad color" });
+    }
+    await prisma.calendarMember.updateMany({ where: { calendarId: id, userId }, data: { color: color ?? null } });
+    return reply.send({ ok: true });
   });
 }

@@ -26,14 +26,17 @@ async function requireCalendarMember(prisma: PrismaClient, calendarId: string, u
 const REPEAT_RULES = new Set(["none", "daily", "weekly", "monthly", "yearly"]);
 
 type ParticipantRow = { userId: string; status: string; user?: { displayName: string | null } };
+type MemberRow = { userId: string };
 
-export function publicEvent(e: Event & { participants?: ParticipantRow[] }) {
+export function publicEvent(e: Event & { participants?: ParticipantRow[]; members?: MemberRow[] }) {
   const base: Record<string, unknown> = {
     id: e.id, calendarId: e.calendarId, title: e.title, allDay: e.allDay,
     startsAt: e.startsAt, endsAt: e.endsAt, repeatRule: e.repeatRule, remindMin: e.remindMin,
     labelColor: e.labelColor, note: e.note, url: e.url, location: e.location,
     creatorId: e.creatorId, createdAt: e.createdAt, updatedAt: e.updatedAt,
+    pinned: e.pinned ?? false,
   };
+  if (e.members) base.memberIds = e.members.map((m) => m.userId);
   if (e.participants) {
     base.participants = e.participants.map((p) => ({
       userId: p.userId, status: p.status, displayName: p.user?.displayName ?? null,
@@ -43,12 +46,16 @@ export function publicEvent(e: Event & { participants?: ParticipantRow[] }) {
   return base;
 }
 
-const PARTICIPANT_INCLUDE = { participants: { include: { user: { select: { displayName: true } } } } };
+const PARTICIPANT_INCLUDE = {
+  participants: { include: { user: { select: { displayName: true } } } },
+  members: true,
+};
 
 type EventInput = {
   title?: string; allDay?: boolean; startsAt?: string; endsAt?: string | null;
   repeatRule?: string; remindMin?: number | null; labelColor?: string | null;
   note?: string | null; url?: string | null; location?: string | null;
+  pinned?: boolean; memberIds?: string[] | null; // null/[] = 全部成員
 };
 
 function parseEventInput(body: EventInput, reply: FastifyReply): { data?: Record<string, unknown>; err?: string } {
@@ -80,6 +87,11 @@ function parseEventInput(body: EventInput, reply: FastifyReply): { data?: Record
   if (body.note !== undefined) data.note = body.note;
   if (body.url !== undefined) data.url = body.url;
   if (body.location !== undefined) data.location = body.location;
+  if (body.pinned !== undefined) data.pinned = Boolean(body.pinned);
+  if (body.memberIds !== undefined) {
+    if (body.memberIds !== null && !Array.isArray(body.memberIds)) return { err: "memberIds must be an array or null" };
+    (data as any)._memberIds = body.memberIds; // 唔係 Event column，分開處理
+  }
   return { data };
 }
 
@@ -103,11 +115,17 @@ export function registerEventRoutes(app: FastifyInstance, prisma: PrismaClient) 
     if (data.endsAt && data.startsAt && (data.endsAt as Date) < (data.startsAt as Date)) {
       return reply.code(400).send({ error: "endsAt must be after startsAt" });
     }
+    const memberIds = (data as any)._memberIds as string[] | null | undefined;
+    delete (data as any)._memberIds;
     const event = await prisma.event.create({
       data: { ...(data as object), calendarId, creatorId: user.id } as never,
     });
-    await emitEvent(prisma, "event.created", event.calendarId, { event: publicEvent(event), actorId: user.id });
-    return reply.code(201).send({ event: publicEvent(event) });
+    if (memberIds && memberIds.length > 0) {
+      await prisma.eventMember.createMany({ data: memberIds.map((uid) => ({ eventId: event.id, userId: uid })) });
+    }
+    const full = await prisma.event.findUniqueOrThrow({ where: { id: event.id }, include: PARTICIPANT_INCLUDE });
+    await emitEvent(prisma, "event.created", event.calendarId, { event: publicEvent(full), actorId: user.id });
+    return reply.code(201).send({ event: publicEvent(full) });
   });
 
   // List events in a calendar, optional range filter: ?from=&to= (ISO).
@@ -146,9 +164,18 @@ export function registerEventRoutes(app: FastifyInstance, prisma: PrismaClient) 
     const startsAt = (data.startsAt as Date) ?? existing.startsAt;
     const endsAt = ("endsAt" in data ? (data.endsAt as Date | null) : existing.endsAt) ?? null;
     if (endsAt && endsAt < startsAt) return reply.code(400).send({ error: "endsAt must be after startsAt" });
+    const memberIds = (data as any)._memberIds as string[] | null | undefined;
+    delete (data as any)._memberIds;
     const event = await prisma.event.update({ where: { id }, data });
-    await emitEvent(prisma, "event.updated", existing.calendarId, { event: publicEvent(event), actorId: user.id });
-    return { event: publicEvent(event) };
+    if (memberIds !== undefined) {
+      await prisma.eventMember.deleteMany({ where: { eventId: id } });
+      if (memberIds && memberIds.length > 0) {
+        await prisma.eventMember.createMany({ data: memberIds.map((uid) => ({ eventId: id, userId: uid })) });
+      }
+    }
+    const full = await prisma.event.findUniqueOrThrow({ where: { id }, include: PARTICIPANT_INCLUDE });
+    await emitEvent(prisma, "event.updated", existing.calendarId, { event: publicEvent(full), actorId: user.id });
+    return { event: publicEvent(full) };
   });
 
   // Search events by title/location/note (case-insensitive contains)

@@ -59,6 +59,22 @@ final class ProtoState: ObservableObject {
     @Published var liveExternalEvents: [MTExternalEvent] = []
     @Published var displayMonth = Date() // 月曆而家顯示緊邊個月（‹ › 導航）
     var duplicateSource: MTEvent? // 「複製活動」來源（入 create 頁 prefill 用，用完即清）
+
+    // NEW 未讀標記：per-calendar 最後查看時間（本機儲存）
+    private var lastSeen: [String: Double] {
+        get { (UserDefaults.standard.dictionary(forKey: "cal_seen") as? [String: Double]) ?? [:] }
+        set { UserDefaults.standard.set(newValue, forKey: "cal_seen") }
+    }
+    func markCalendarSeen(_ calId: String) {
+        var m = lastSeen; m[calId] = Date().timeIntervalSince1970; lastSeen = m
+    }
+    /// 個曆有冇我未睇過嘅活動更新（updatedAt > 上次 mark）
+    func calendarHasUnseen(_ cal: MTCalendar) -> Bool {
+        guard let seen = lastSeen[cal.id] else { return false } // 從未睇過唔當 NEW（第一次入 app 全部係新）
+        return liveEvents.contains { ev in
+            ev.calendarId == cal.id && (parseISODate(ev.updatedAt ?? ev.createdAt ?? "")?.timeIntervalSince1970 ?? 0) > seen
+        }
+    }
     // 篩選：空 set = 全部顯示；有值 = 淨顯示嗰啲 label 色
     @Published var filterLabels: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "filter_labels") ?? []) {
         didSet { UserDefaults.standard.set(Array(filterLabels), forKey: "filter_labels") }
@@ -142,10 +158,10 @@ final class ProtoState: ObservableObject {
     }
 
     @MainActor
-    func createLiveEvent(title: String, date: Date, allDay: Bool, labelColor: String, location: String?, noteText: String?, repeatRule: String, remindMin: Int? = nil) async {
+    func createLiveEvent(title: String, date: Date, allDay: Bool, labelColor: String, location: String?, noteText: String?, repeatRule: String, remindMin: Int? = nil, memberIds: [String]? = nil) async {
         guard let api, let calId = activeCalendarId else { return }
         do {
-            _ = try await api.createEvent(calendarId: calId, title: title, startsAt: date, allDay: allDay, repeatRule: repeatRule, labelColor: labelColor, location: location, note: noteText, remindMin: remindMin)
+            _ = try await api.createEvent(calendarId: calId, title: title, startsAt: date, allDay: allDay, repeatRule: repeatRule, labelColor: labelColor, location: location, note: noteText, remindMin: remindMin, memberIds: memberIds)
             note("已保存 ✓")
             await loadLive()
             screen = .month

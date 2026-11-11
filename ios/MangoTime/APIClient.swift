@@ -167,6 +167,10 @@ struct MTEvent: Codable, Identifiable, Hashable {
     let remindMin: Int?
     let participants: [MTRsvp]?
     let goingCount: Int?
+    let memberIds: [String]?
+    let pinned: Bool?
+    let createdAt: String?
+    let updatedAt: String?
 }
 
 struct MTRsvp: Codable, Hashable {
@@ -199,7 +203,7 @@ extension APIClient {
         return res.events
     }
 
-    func createEvent(calendarId: String, title: String, startsAt: Date, allDay: Bool, repeatRule: String, labelColor: String, location: String?, note: String?, remindMin: Int? = nil) async throws -> MTEvent {
+    func createEvent(calendarId: String, title: String, startsAt: Date, allDay: Bool, repeatRule: String, labelColor: String, location: String?, note: String?, remindMin: Int? = nil, memberIds: [String]? = nil, pinned: Bool? = nil) async throws -> MTEvent {
         struct Payload: Encodable {
             let title: String
             let startsAt: String
@@ -209,11 +213,13 @@ extension APIClient {
             let location: String?
             let note: String?
             let remindMin: Int?
+            let memberIds: [String]?
+            let pinned: Bool?
         }
         let iso = ISO8601DateFormatter()
         let res: EventResponse = try await request(
             "POST", "/v1/calendars/\(calendarId)/events",
-            body: Payload(title: title, startsAt: iso.string(from: startsAt), allDay: allDay, repeatRule: repeatRule, labelColor: labelColor, location: location, note: note, remindMin: remindMin)
+            body: Payload(title: title, startsAt: iso.string(from: startsAt), allDay: allDay, repeatRule: repeatRule, labelColor: labelColor, location: location, note: note, remindMin: remindMin, memberIds: memberIds, pinned: pinned)
         )
         return res.event
     }
@@ -223,7 +229,7 @@ extension APIClient {
         let _: EmptyResponse = try await request("DELETE", "/v1/calendars/\(calendarId)/events/\(eventId)", body: Optional<Empty>.none)
     }
 
-    func updateEvent(eventId: String, title: String?, startsAt: Date?, allDay: Bool?, labelColor: String?, location: String?, note: String?, remindMin: Int? = nil) async throws -> MTEvent {
+    func updateEvent(eventId: String, title: String?, startsAt: Date?, allDay: Bool?, labelColor: String?, location: String?, note: String?, remindMin: Int? = nil, memberIds: [String]? = nil, pinned: Bool? = nil) async throws -> MTEvent {
         struct Payload: Encodable {
             let title: String?
             let startsAt: String?
@@ -232,11 +238,13 @@ extension APIClient {
             let location: String?
             let note: String?
             let remindMin: Int?
+            let memberIds: [String]?
+            let pinned: Bool?
         }
         let iso = ISO8601DateFormatter()
         let res: EventResponse = try await request(
             "PATCH", "/v1/events/\(eventId)",
-            body: Payload(title: title, startsAt: startsAt.map { iso.string(from: $0) }, allDay: allDay, labelColor: labelColor, location: location, note: note, remindMin: remindMin)
+            body: Payload(title: title, startsAt: startsAt.map { iso.string(from: $0) }, allDay: allDay, labelColor: labelColor, location: location, note: note, remindMin: remindMin, memberIds: memberIds, pinned: pinned)
         )
         return res.event
     }
@@ -252,6 +260,7 @@ struct MTAcceptResult: Codable { let calendarId: String; let alreadyMember: Bool
 struct MTMember: Codable, Identifiable {
     let userId: String
     let role: String
+    let color: String?
     let displayName: String
     let email: String
     let avatarUrl: String?
@@ -276,6 +285,14 @@ extension APIClient {
     func listMembers(calendarId: String) async throws -> [MTMember] {
         let res: MTMemberList = try await request("GET", "/v1/calendars/\(calendarId)/members")
         return res.members
+    }
+    func setMemberColor(calendarId: String, userId: String, color: String?) async throws {
+        struct P: Encodable { let color: String? }
+        struct R: Codable { let ok: Bool }
+        let _: R = try await request("PATCH", "/v1/calendars/\(calendarId)/members/\(userId)/color", body: P(color: color))
+    }
+    func removeMember(calendarId: String, userId: String) async throws {
+        let _: EmptyResponse = try await request("DELETE", "/v1/calendars/\(calendarId)/members/\(userId)")
     }
 }
 

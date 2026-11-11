@@ -95,6 +95,8 @@ struct ProtoEventForm: View {
     @State private var date = Date()
     @State private var repeatRule = "none"
     @State private var remindMin: Int? = nil
+    @State private var showMemberPicker = false
+    @State private var selectedMemberIds: Set<String> = []
     @State private var loc = ""
     @State private var noteText = ""
     @State private var scanPhoto: PhotosPickerItem?
@@ -115,7 +117,7 @@ struct ProtoEventForm: View {
                     guard !t.isEmpty else { return }
                     if let ev = editing {
                         Task {
-                            _ = try? await s.api?.updateEvent(eventId: ev.id, title: t, startsAt: date, allDay: allDay, labelColor: labelKeys[labelIdx], location: loc.isEmpty ? nil : loc, note: noteText.isEmpty ? nil : noteText, remindMin: remindMin)
+                            _ = try? await s.api?.updateEvent(eventId: ev.id, title: t, startsAt: date, allDay: allDay, labelColor: labelKeys[labelIdx], location: loc.isEmpty ? nil : loc, note: noteText.isEmpty ? nil : noteText, remindMin: remindMin, memberIds: selectedMemberIds.isEmpty ? [] : Array(selectedMemberIds))
                             s.note("已更新 ✓")
                             await s.loadLive()
                             s.screen = .month
@@ -125,7 +127,7 @@ struct ProtoEventForm: View {
                             if saveAsMemo, let calId = s.activeCalendarId {
                                 _ = try? await s.api?.createMemo(calendarId: calId, title: t, body: noteText)
                             }
-                            await s.createLiveEvent(title: t, date: date, allDay: allDay, labelColor: labelKeys[labelIdx], location: loc.isEmpty ? nil : loc, noteText: noteText.isEmpty ? nil : noteText, repeatRule: repeatRule, remindMin: remindMin)
+                            await s.createLiveEvent(title: t, date: date, allDay: allDay, labelColor: labelKeys[labelIdx], location: loc.isEmpty ? nil : loc, noteText: noteText.isEmpty ? nil : noteText, repeatRule: repeatRule, remindMin: remindMin, memberIds: selectedMemberIds.isEmpty ? nil : Array(selectedMemberIds))
                         }
                     }
                 } else {
@@ -238,8 +240,38 @@ struct ProtoEventForm: View {
             }
             .padding(.top, 14)
             PCard {
-                PRow(icon: "person.2", label: "成員", value: "全部成員")
                 if s.api != nil {
+                    // 成員指定：撳開 chips 揀邊個成員（空 = 全部成員）
+                    VStack(alignment: .leading, spacing: 8) {
+                        Button {
+                            withAnimation(.spring(response: 0.3)) { showMemberPicker.toggle() }
+                            if s.liveMembers.isEmpty, let calId = s.activeCalendarId {
+                                Task { s.liveMembers = (try? await s.api?.listMembers(calendarId: calId)) ?? [] }
+                            }
+                        } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: "person.2").font(.subheadline).foregroundStyle(PT.soft).frame(width: 20)
+                                Text("成員").foregroundStyle(.primary)
+                                Spacer()
+                                Text(selectedMemberIds.isEmpty ? "全部成員" : "\(selectedMemberIds.count) 位成員")
+                                    .font(.subheadline).foregroundStyle(PT.soft)
+                                Image(systemName: showMemberPicker ? "chevron.up" : "chevron.down").font(.caption).foregroundStyle(PT.soft)
+                            }
+                            .padding(.vertical, 12)
+                        }
+                        .buttonStyle(.plain)
+                        if showMemberPicker {
+                            FlowRow(spacing: 8) {
+                                ForEach(s.liveMembers) { m in
+                                    FilterChip(text: m.displayName, active: selectedMemberIds.contains(m.userId)) {
+                                        if selectedMemberIds.contains(m.userId) { selectedMemberIds.remove(m.userId) }
+                                        else { selectedMemberIds.insert(m.userId) }
+                                    }
+                                }
+                            }
+                            Text("唔揀 = 全部成員").font(.caption2).foregroundStyle(PT.soft)
+                        }
+                    }
                     HStack {
                         Label("地點", systemImage: "mappin")
                         Spacer()
@@ -276,6 +308,7 @@ struct ProtoEventForm: View {
                 loc = ev.location ?? ""
                 noteText = ev.note ?? ""
                 remindMin = ev.remindMin
+                selectedMemberIds = Set(ev.memberIds ?? [])
             } else if let src = s.duplicateSource {
                 // 複製活動：拎晒欄位，日期跟原本
                 title = src.title
@@ -286,6 +319,7 @@ struct ProtoEventForm: View {
                 noteText = src.note ?? ""
                 repeatRule = src.repeatRule
                 remindMin = src.remindMin
+                selectedMemberIds = Set(src.memberIds ?? [])
                 s.duplicateSource = nil
             }
         }
@@ -359,8 +393,37 @@ struct ProtoLiveEventDetail: View {
 
     var body: some View {
         PSheet(title: ev.title, onBack: { s.screen = .month }, right: AnyView(
-            Button { s.screen = .editEvent(ev) } label: { Text("編輯").foregroundStyle(PT.orange) }
+            HStack(spacing: 14) {
+                // 釘選 toggle
+                Button {
+                    Task {
+                        _ = try? await s.api?.updateEvent(eventId: ev.id, title: nil, startsAt: nil, allDay: nil, labelColor: nil, location: nil, note: nil, pinned: !(ev.pinned ?? false))
+                        await s.loadLive()
+                    }
+                } label: {
+                    Image(systemName: (ev.pinned ?? false) ? "pin.fill" : "pin")
+                        .foregroundStyle((ev.pinned ?? false) ? PT.orange : PT.soft)
+                }
+                Button { s.screen = .editEvent(ev) } label: { Text("編輯").foregroundStyle(PT.orange) }
+            }
         )) {
+            // D-day 倒數（未來活動）
+            if let d = parseISODate(ev.startsAt) {
+                let days = Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: Date()), to: Calendar.current.startOfDay(for: d)).day ?? 0
+                if days > 0 {
+                    Text("仲有 \(days) 日").font(.caption).bold().foregroundStyle(PT.orange)
+                        .padding(.horizontal, 10).padding(.vertical, 4)
+                        .background(PT.orange.opacity(0.12)).clipShape(Capsule())
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.bottom, 4)
+                } else if days == 0 {
+                    Text("就係今日！").font(.caption).bold().foregroundStyle(.white)
+                        .padding(.horizontal, 10).padding(.vertical, 4)
+                        .background(PT.orange).clipShape(Capsule())
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.bottom, 4)
+                }
+            }
             PCard {
                 PRow(icon: "clock", label: "", value: startText)
                 HStack(spacing: 10) {
@@ -373,6 +436,13 @@ struct ProtoLiveEventDetail: View {
                 .padding(.vertical, 12)
                 if let loc = ev.location, !loc.isEmpty { PRow(icon: "mappin", label: "地點", value: loc) }
                 if ev.repeatRule != "none" { PRow(icon: "repeat", label: "重複", value: ev.repeatRule) }
+                // 指定成員（空/冇 = 全部成員）
+                if let ids = ev.memberIds, !ids.isEmpty {
+                    let names = s.liveMembers.filter { ids.contains($0.userId) }.map { $0.displayName }
+                    PRow(icon: "person.2", label: "成員", value: names.isEmpty ? "\(ids.count) 位" : names.joined(separator: "、"))
+                } else {
+                    PRow(icon: "person.2", label: "成員", value: "全部成員")
+                }
                 if let note = ev.note, !note.isEmpty { PRow(icon: "note.text", label: "備註", value: note) }
             }
             .padding(.top, 10)
