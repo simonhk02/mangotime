@@ -32,7 +32,7 @@ enum ProtoScreen: Hashable {
     case memos, memosEmpty, memoDetail(MockMemo), liveMemoDetail(MTMemo)
     case todos, album, members, invite
     case extSubscribe
-    case settings, displaySettings, filterSettings, displayCalendar, notifSettings
+    case settings, displaySettings, filterSettings, displayCalendar, widgetCalendar, notifSettings
     case noticeBoard, noticeDetail
     case premium, premiumDetail
     case helpHome, helpCategory(HelpCat), helpArticle(String), faq, contact, userGuide
@@ -42,6 +42,10 @@ final class ProtoState: ObservableObject {
     @Published var screen: ProtoScreen = .splash
     @Published var lunarOn = true
     @Published var weekStartMonday = true
+    @Published var weekNumbersOn = UserDefaults.standard.bool(forKey: "week_numbers") { didSet { UserDefaults.standard.set(weekNumbersOn, forKey: "week_numbers") } }
+    @Published var holidaysOn = UserDefaults.standard.bool(forKey: "holidays_on") { didSet { UserDefaults.standard.set(holidaysOn, forKey: "holidays_on") } }
+    @Published var hour24 = UserDefaults.standard.object(forKey: "hour24") == nil ? true : UserDefaults.standard.bool(forKey: "hour24") { didSet { UserDefaults.standard.set(hour24, forKey: "hour24") } }
+    @Published var hiddenCalendarIds: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "hidden_cals") ?? []) { didSet { UserDefaults.standard.set(Array(hiddenCalendarIds), forKey: "hidden_cals") } }
     @Published var settingsTab = 0 // 0=設定 1=支援
     @Published var feedTab = 0 // 0=行程 1=相簿
     @Published var toast = ""
@@ -59,6 +63,11 @@ final class ProtoState: ObservableObject {
     @Published var liveExternalEvents: [MTExternalEvent] = []
     @Published var displayMonth = Date() // 月曆而家顯示緊邊個月（‹ › 導航）
     var duplicateSource: MTEvent? // 「複製活動」來源（入 create 頁 prefill 用，用完即清）
+
+    // widget 顯示邊個曆（nil = 跟 active）
+    @Published var widgetCalendarId: String? = UserDefaults.standard.string(forKey: "widget_cal") {
+        didSet { UserDefaults.standard.set(widgetCalendarId, forKey: "widget_cal"); Task { @MainActor in self.syncWidget() } }
+    }
 
     // NEW 未讀標記：per-calendar 最後查看時間（本機儲存）
     private var lastSeen: [String: Double] {
@@ -127,8 +136,23 @@ final class ProtoState: ObservableObject {
     /// Widget 快取：今日活動寫落 App Group（widget 15 分鐘讀一次）
     @MainActor
     func syncWidget() {
+        // 揀咗其他曆 → 額外 fetch 佢今日活動
+        if let wid = widgetCalendarId, wid != activeCalendarId, let api {
+            Task {
+                let cal = Calendar(identifier: .gregorian)
+                let from = cal.startOfDay(for: Date())
+                let to = cal.date(byAdding: .day, value: 1, to: from)!
+                let evs = (try? await api.listEvents(calendarId: wid, from: from, to: to)) ?? []
+                writeWidget(events: evs, calendarName: liveCalendars.first(where: { $0.id == wid })?.name ?? "MangoTime")
+            }
+            return
+        }
+        writeWidget(events: liveEvents, calendarName: liveCalendars.first(where: { $0.id == activeCalendarId })?.name ?? "MangoTime")
+    }
+
+    private func writeWidget(events: [MTEvent], calendarName: String) {
         let cal = Calendar(identifier: .gregorian)
-        let todayEvents = liveEvents.compactMap { ev -> [String: String]? in
+        let todayEvents = events.compactMap { ev -> [String: String]? in
             guard let start = parseISODate(ev.startsAt), cal.isDateInToday(start) else { return nil }
             let timeStr: String
             if ev.allDay { timeStr = "全日" } else {
@@ -137,7 +161,7 @@ final class ProtoState: ObservableObject {
             return ["id": ev.id, "title": ev.title, "time": timeStr, "colorHex": colorHex(ev.labelColor)]
         }
         let snap: [String: Any] = [
-            "calendarName": liveCalendars.first(where: { $0.id == activeCalendarId })?.name ?? "MangoTime",
+            "calendarName": calendarName,
             "events": todayEvents,
             "updatedAt": Date().timeIntervalSince1970,
         ]
@@ -607,6 +631,7 @@ struct ProtoContent: View {
             case .displaySettings: ProtoDisplaySettings()
             case .filterSettings: ProtoFilterSettings()
             case .displayCalendar: ProtoDisplayCalendar()
+            case .widgetCalendar: ProtoWidgetCalendar()
             case .notifSettings: ProtoNotifSettings()
             case .noticeBoard: ProtoNoticeBoard()
             case .noticeDetail: ProtoNoticeDetail()

@@ -703,19 +703,32 @@ struct ProtoSearch: View {
             }
             if s.api != nil {
                 ForEach(filtered) { ev in
-                    Button { s.screen = .liveEventDetail(ev) } label: {
-                        HStack(spacing: 10) {
-                            Circle().fill(PT.orange).frame(width: 10, height: 10)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(ev.title).foregroundStyle(.primary)
-                                Text(ev.startsAt.prefix(10)).font(.caption).foregroundStyle(PT.soft)
+                    HStack(spacing: 10) {
+                        Button { s.screen = .liveEventDetail(ev) } label: {
+                            HStack(spacing: 10) {
+                                Circle().fill(PT.orange).frame(width: 10, height: 10)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(ev.title).foregroundStyle(.primary)
+                                    Text(ev.startsAt.prefix(10)).font(.caption).foregroundStyle(PT.soft)
+                                }
                             }
-                            Spacer()
                         }
-                        .padding(.vertical, 10)
-                        .overlay(Divider().opacity(0.5), alignment: .bottom)
+                        .buttonStyle(.plain)
+                        Spacer()
+                        // 喺行事曆顯示（跳去嗰個月）
+                        Button {
+                            if let d = parseISODate(ev.startsAt) {
+                                s.displayMonth = d
+                                Task { await s.loadLive(month: d) }
+                            }
+                            s.screen = .month
+                        } label: {
+                            Image(systemName: "calendar").font(.subheadline).foregroundStyle(PT.orange)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
+                    .padding(.vertical, 10)
+                    .overlay(Divider().opacity(0.5), alignment: .bottom)
                 }
                 if !q.isEmpty && liveResults.isEmpty && !searching {
                     Text("搵唔到「\(q)」").font(.caption).foregroundStyle(PT.soft).padding(.top, 8)

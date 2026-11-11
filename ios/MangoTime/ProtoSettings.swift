@@ -60,27 +60,50 @@ struct ProtoDisplaySettings: View {
         PSheet(title: "顯示設定", onBack: { s.screen = .settings }) {
             PRow(label: "一週嘅開始", value: s.weekStartMonday ? "週一" : "週日") { s.weekStartMonday.toggle() }
             PRow(label: "農曆顯示", toggle: $s.lunarOn)
-            PRow(label: "第幾週", toggle: .constant(false))
-            PRow(label: "節日", value: "香港") { s.note("節日（mock）") }
-            PRow(label: "24 小時制", toggle: .constant(true))
+            PRow(label: "第幾週", toggle: $s.weekNumbersOn)
+            PRow(label: "公眾假期", toggle: $s.holidaysOn)
+            PRow(label: "24 小時制", toggle: $s.hour24)
             PRow(label: "行事曆顯示") { s.screen = .displayCalendar }
+            if s.api != nil {
+                PRow(icon: "square.grid.2x2", label: "小工具顯示嘅行事曆", value: s.liveCalendars.first(where: { $0.id == s.widgetCalendarId })?.name ?? "跟而家揀緊嗰個") { s.screen = .widgetCalendar }
+            }
         }
     }
 }
 
 struct ProtoDisplayCalendar: View {
     @EnvironmentObject var s: ProtoState
-    @State private var on = ["家庭日曆": true, "工作": true, "香港公眾假期": false]
     var body: some View {
         PSheet(title: "行事曆顯示", onBack: { s.screen = .displaySettings }) {
-            PRow(label: "家庭日曆", toggle: binding("家庭日曆"))
-            PRow(label: "工作", toggle: binding("工作"))
-            PRow(label: "香港公眾假期", toggle: binding("香港公眾假期"))
-            Text("隱藏嘅行事曆唔會喺月曆顯示。").font(.caption).foregroundStyle(PT.soft).padding(.top, 8)
+            if s.api != nil {
+                ForEach(s.liveCalendars) { cal in
+                    PRow(label: cal.name, toggle: Binding(
+                        get: { !s.hiddenCalendarIds.contains(cal.id) },
+                        set: { on in
+                            if on { s.hiddenCalendarIds.remove(cal.id) } else { s.hiddenCalendarIds.insert(cal.id) }
+                        }
+                    ))
+                }
+                Text("隱藏嘅行事曆唔會喺月曆顯示。").font(.caption).foregroundStyle(PT.soft).padding(.top, 8)
+            } else {
+                PRow(label: "家庭日曆", toggle: .constant(true))
+                PRow(label: "工作", toggle: .constant(true))
+            }
         }
     }
-    private func binding(_ key: String) -> Binding<Bool> {
-        Binding(get: { on[key] ?? false }, set: { on[key] = $0 })
+}
+
+/// 小工具顯示邊個曆（TimeTree「在其他功能中顯示的行事曆」）
+struct ProtoWidgetCalendar: View {
+    @EnvironmentObject var s: ProtoState
+    var body: some View {
+        PSheet(title: "小工具顯示", onBack: { s.screen = .displaySettings }) {
+            PRow(label: "跟而家揀緊嗰個", value: s.widgetCalendarId == nil ? "✓" : "") { s.widgetCalendarId = nil }
+            ForEach(s.liveCalendars) { cal in
+                PRow(label: cal.name, value: s.widgetCalendarId == cal.id ? "✓" : "") { s.widgetCalendarId = cal.id }
+            }
+            Text("主畫面小工具會顯示呢個行事曆嘅今日活動。").font(.caption).foregroundStyle(PT.soft).padding(.top, 8)
+        }
     }
 }
 

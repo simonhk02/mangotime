@@ -129,6 +129,7 @@ struct ProtoMonthScreen: View {
         if s.api != nil {
             // LIVE：repeatRule 展開（同 web 版邏輯）+ 篩選（揀咗 label 先至顯示）
             var out = s.liveEvents.compactMap { ev -> DisplayEvent? in
+                if s.hiddenCalendarIds.contains(ev.calendarId) { return nil }
                 if !s.filterLabels.isEmpty && !s.filterLabels.contains(ev.labelColor ?? "bright-orange") { return nil }
                 guard let start = parseISODate(ev.startsAt) else { return nil }
                 let sameDay = cal.isDate(start, inSameDayAs: cell.date)
@@ -187,6 +188,7 @@ struct ProtoMonthScreen: View {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 0) {
                 ForEach(cells) { cell in
                     let evs = eventsFor(cell)
+                    let _ = cell.id
                     let isToday = !cell.other && cal.isDateInToday(cell.date)
                     let wd = cal.component(.weekday, from: cell.date) // 1=日 7=六
                     let holiday = HKHolidays.name(for: cell.date)
@@ -209,7 +211,7 @@ struct ProtoMonthScreen: View {
                                     .font(.system(size: 14, weight: isToday ? .bold : .regular))
                                     .foregroundStyle(dayColor)
                             }
-                            if let h = holiday, !cell.other {
+                            if let h = holiday, !cell.other, s.holidaysOn {
                                 Text(h)
                                     .font(.system(size: 7))
                                     .foregroundStyle(PT.red)
@@ -243,6 +245,14 @@ struct ProtoMonthScreen: View {
                         }
                         .padding(.top, 5).padding(.horizontal, 3)
                         .frame(maxWidth: .infinity, minHeight: 76, alignment: .top)
+                        .overlay(alignment: .topLeading) {
+                            // 第幾週（每行第一格左上角細字）
+                            if s.weekNumbersOn && (cells.firstIndex(where: { $0.id == cell.id }) ?? 0) % 7 == 0 {
+                                Text("W\(cal.component(.weekOfYear, from: cell.date))")
+                                    .font(.system(size: 7)).foregroundStyle(PT.soft.opacity(0.7))
+                                    .padding(.leading, 1)
+                            }
+                        }
                         .contentShape(Rectangle())
                         .opacity(cell.other ? 0.45 : 1)
                     }
