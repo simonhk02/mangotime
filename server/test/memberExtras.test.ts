@@ -81,3 +81,12 @@ test("兒童/寵物帳戶：開 → 列 → 生日入埋 birthdays → 刪", asy
   const del = await app.inject({ method: "DELETE", url: `/v1/calendars/${calId}/children/${childId}`, headers: { authorization: `Bearer ${t1}` } });
   assert.equal(del.statusCode, 204);
 });
+
+test("digestTime：PATCH /v1/me set HH:MM → me 見到；壞格式 400", async () => {
+  const t1 = await signup("dig1@test.com", "D");
+  const bad = await app.inject({ method: "PATCH", url: "/v1/me", headers: { authorization: `Bearer ${t1}` }, payload: { digestTime: "8am" } });
+  assert.equal(bad.statusCode, 400);
+  const ok = await app.inject({ method: "PATCH", url: "/v1/me", headers: { authorization: `Bearer ${t1}` }, payload: { digestTime: "07:30" } });
+  assert.equal(ok.statusCode, 200);
+  assert.equal(ok.json().user.digestTime, "07:30");
+});

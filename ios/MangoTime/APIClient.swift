@@ -6,6 +6,7 @@ struct MTUser: Codable {
     let displayName: String
     let avatarUrl: String?
     let birthdate: String?
+    let digestTime: String?
 }
 
 struct AuthResponse: Codable {
@@ -206,10 +207,10 @@ extension APIClient {
         struct R: Codable { let ok: Bool }
         let _: R = try await request("POST", "/v1/calendars/\(calendarId)/seen")
     }
-    func updateMe(displayName: String? = nil, birthdate: String? = nil) async throws {
-        struct P: Encodable { let displayName: String?; let birthdate: String? }
+    func updateMe(displayName: String? = nil, birthdate: String? = nil, digestTime: String? = nil) async throws {
+        struct P: Encodable { let displayName: String?; let birthdate: String?; let digestTime: String? }
         struct R: Codable { let user: MTUser }
-        let r: R = try await request("PATCH", "/v1/me", body: P(displayName: displayName, birthdate: birthdate))
+        let r: R = try await request("PATCH", "/v1/me", body: P(displayName: displayName, birthdate: birthdate, digestTime: digestTime))
         currentUser = r.user
     }
     func listChildren(calendarId: String) async throws -> [MTChild] {

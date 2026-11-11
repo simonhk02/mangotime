@@ -148,6 +148,10 @@ struct ProtoFilterSettings: View {
 
 struct ProtoNotifSettings: View {
     @EnvironmentObject var s: ProtoState
+    @State private var digestDate: Date = {
+        let f = DateFormatter(); f.dateFormat = "HH:mm"
+        return f.date(from: "08:00") ?? Date()
+    }()
     @AppStorage("notif_invite") private var notifInvite = true
     @AppStorage("notif_new_event") private var notifNewEvent = true
     @AppStorage("notif_comment") private var notifComment = true
@@ -157,7 +161,25 @@ struct ProtoNotifSettings: View {
             PRow(label: "新活動", toggle: $notifNewEvent)
             PRow(label: "留言", toggle: $notifComment)
             PRow(label: "活動開始前", value: "1 小時前") { s.note("提醒時間（推送功能做緊）") }
-            PRow(label: "每日通知時間", value: "09:00") { s.note("通知時間（推送功能做緊）") }
+            // 每日 digest 時間（server 喺呢個鐘推「今日行程」）
+            HStack {
+                Text("每日通知時間")
+                Spacer()
+                DatePicker("", selection: $digestDate, displayedComponents: .hourAndMinute)
+                    .labelsHidden()
+                    .onChange(of: digestDate) { _, d in
+                        let f = DateFormatter(); f.dateFormat = "HH:mm"
+                        Task { try? await s.api?.updateMe(digestTime: f.string(from: d)); s.note("通知時間已更新 ✓") }
+                    }
+            }
+            .padding(.vertical, 12)
+            .overlay(Divider().opacity(0.6), alignment: .bottom)
+        }
+        .onAppear {
+            if let t = s.api?.currentUser?.digestTime {
+                let f = DateFormatter(); f.dateFormat = "HH:mm"
+                if let d = f.date(from: t) { digestDate = d }
+            }
         }
     }
 }

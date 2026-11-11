@@ -112,6 +112,22 @@ export function registerPushRoutes(app: FastifyInstance, prisma: PrismaClient) {
   });
 }
 
+// 直接推畀單一用戶（digest 用）
+export async function sendPushToUser(prisma: PrismaClient, userId: string, title: string, body: string) {
+  const cfg = apnsConfig();
+  if (!cfg) return;
+  const devices = await prisma.device.findMany({ where: { userId } });
+  if (devices.length === 0) return;
+  const jwt = await apnsJwt(cfg);
+  const aps = { aps: { alert: { title, body }, sound: "default" } };
+  for (const d of devices) {
+    const res = await sender(cfg.host, jwt, cfg.bundleId, d.token, aps);
+    if (res.reason === "BadDeviceToken" || res.reason === "Unregistered") {
+      await prisma.device.delete({ where: { id: d.id } }).catch(() => {});
+    }
+  }
+}
+
 // dispatcher：俾 app.ts 嘅 outbox loop 叫
 export async function dispatchPush(prisma: PrismaClient, type: string, aggregateId: string, payload: Record<string, unknown>) {
   const cfg = apnsConfig();

@@ -1,5 +1,6 @@
 import { buildApp } from "./app.js";
 import { startWebhookDispatcher } from "./webhooks.js";
+import { startDigestLoop } from "./digest.js";
 import { PrismaClient } from "@prisma/client";
 
 const PORT = Number(process.env.PORT ?? 8787);
@@ -19,7 +20,8 @@ process.on("SIGTERM", () => void shutdown("SIGTERM"));
 try {
   await app.listen({ port: PORT, host: HOST });
   startWebhookDispatcher(prisma);
-  app.log.info("webhook dispatcher running");
+  startDigestLoop(prisma);
+  app.log.info("webhook dispatcher + digest loop running");
 } catch (err) {
   app.log.error(err);
   process.exit(1);
