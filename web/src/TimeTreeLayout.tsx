@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import EventDetail from "./EventDetail";
 import { api, type CalEvent, type Calendar } from "./api";
 import EventForm from "./EventForm";
 import { lunarShort } from "./lunar";
@@ -24,6 +25,8 @@ export default function TimeTreeLayout({
   const [cursor, setCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [events, setEvents] = useState<CalEvent[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [selected, setSelected] = useState<CalEvent | null>(null);
+  const [searchQ, setSearchQ] = useState("");
   const [formDate, setFormDate] = useState<Date>(today);
   const [activeCal, setActiveCal] = useState<Calendar | null>(calendars[0] ?? null);
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
@@ -77,6 +80,10 @@ export default function TimeTreeLayout({
 
   function eventsFor(day: Date) {
     return events.filter((e) => {
+      if (searchQ.trim()) {
+        const q = searchQ.trim();
+        if (!e.title.includes(q) && !(e.location ?? "").includes(q) && !(e.note ?? "").includes(q)) return false;
+      }
       if (!visibleIds.has(e.calendarId)) return false;
       const s = new Date(e.startsAt);
       if (sameDay(s, day)) return true;
@@ -121,6 +128,12 @@ export default function TimeTreeLayout({
           <strong>{cursor.getFullYear()}年{cursor.getMonth() + 1}月</strong>
           <button onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}>▶</button>
           <button className="tt-today" onClick={() => setCursor(new Date(today.getFullYear(), today.getMonth(), 1))}>今日</button>
+          <input
+            className="tt-search"
+            placeholder="搜尋活動…"
+            value={searchQ}
+            onChange={(e) => setSearchQ(e.target.value)}
+          />
         </div>
         <div className="tt-topright">
           <button className="on">月曆</button>
@@ -193,6 +206,8 @@ export default function TimeTreeLayout({
                     key={e.id}
                     className="tt-event"
                     style={{ background: COLORS[e.labelColor ?? "bright-orange"] ?? COLORS["bright-orange"] }}
+                    onClick={() => setSelected(e)}
+                    title="撳開詳情"
                   >
                     {e.title}
                   </div>
@@ -224,6 +239,13 @@ export default function TimeTreeLayout({
             setShowForm(false);
             void refresh();
           }}
+        />
+      )}
+      {selected && (
+        <EventDetail
+          ev={selected}
+          onClose={() => setSelected(null)}
+          onChanged={() => { setSelected(null); void refresh(); }}
         />
       )}
     </div>

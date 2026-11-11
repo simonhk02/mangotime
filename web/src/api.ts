@@ -45,6 +45,14 @@ export type Calendar = {
   myRole?: string;
 };
 
+export interface CalComment {
+  id: string;
+  userId: string;
+  authorName: string;
+  body: string;
+  createdAt: string;
+}
+
 export const api = {
   register: (email: string, password: string, displayName: string) =>
     call<{ user: User; token: string }>("POST", "/v1/auth/register", { email, password, displayName }),
@@ -63,6 +71,19 @@ export const api = {
   createEvent: (calendarId: string, payload: Partial<CalEvent> & { title: string; startsAt: string }) =>
     call<{ event: CalEvent }>("POST", `/v1/calendars/${calendarId}/events`, payload),
   deleteEvent: (id: string) => call<void>("DELETE", `/v1/events/${id}`),
+  updateEvent: (id: string, payload: Partial<CalEvent>) =>
+    call<{ event: CalEvent }>("PATCH", `/v1/events/${id}`, payload),
+  listComments: (eventId: string) =>
+    call<{ comments: CalComment[] }>("GET", `/v1/events/${eventId}/comments`),
+  postComment: (eventId: string, body: string) =>
+    call<{ comment: CalComment }>("POST", `/v1/events/${eventId}/comments`, { body }),
+  searchEvents: (calendarId: string, q: string) =>
+    call<{ events: CalEvent[] }>("GET", `/v1/calendars/${calendarId}/events/search?q=${encodeURIComponent(q)}`),
+  createInvite: (calendarId: string) =>
+    call<{ invite: { code: string } }>("POST", `/v1/calendars/${calendarId}/invites`),
+  setRsvp: (eventId: string, status: "going" | "declined") =>
+    call<{ ok: boolean }>("POST", `/v1/events/${eventId}/rsvp`, { status }),
+
 };
 
 export type CalEvent = {

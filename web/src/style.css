@@ -180,3 +180,21 @@ button.danger { color: #ef4444; border-color: #ef444480; }
 .tt-labels { display: grid; gap: 0.25rem; margin: 0.25rem 0 0.5rem; }
 .tt-labels button { display: flex; align-items: center; gap: 0.5rem; border: 1px solid #8884; text-align: left; }
 .tt-labels button.on { border-color: #ff7043; background: #ff704314; }
+
+/* EventDetail modal + search */
+.tt-modal-back { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; z-index: 50; }
+.tt-modal { background: var(--bg, #fff); border-radius: 14px; padding: 18px; width: min(420px, 92vw); max-height: 80vh; overflow-y: auto; box-shadow: 0 12px 40px rgba(0,0,0,.25); }
+.tt-modal-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.tt-x { background: none; border: none; font-size: 22px; cursor: pointer; color: #888; }
+.tt-row { font-size: 13px; color: #555; padding: 4px 0; }
+.tt-modal-actions { display: flex; gap: 8px; margin: 12px 0; }
+.tt-modal-actions button { padding: 6px 14px; border-radius: 8px; border: 1px solid #ddd; background: #fff; cursor: pointer; font-weight: 600; }
+.tt-modal-actions .primary, .tt-comments .primary { background: #f97316; border-color: #f97316; color: #fff; }
+.tt-modal-actions .danger { color: #dc2626; border-color: #fca5a5; }
+.tt-comments { border-top: 1px solid #eee; padding-top: 10px; }
+.tt-comments-title { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+.tt-comment { font-size: 13px; padding: 4px 0; display: flex; gap: 8px; }
+.tt-comment b { flex-shrink: 0; }
+.tt-comments form { display: flex; gap: 6px; margin-top: 8px; }
+.tt-comments input { flex: 1; padding: 7px 10px; border: 1px solid #ddd; border-radius: 8px; }
+.tt-search { margin-left: 10px; padding: 6px 10px; border: 1px solid #ddd; border-radius: 999px; font-size: 13px; width: 160px; }
