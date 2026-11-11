@@ -18,6 +18,7 @@ import { registerAttachmentRoutes } from "./attachments.js";
 import { registerRsvpRoutes } from "./rsvp.js";
 import { registerMemberExtraRoutes } from "./memberExtras.js";
 import { registerPublicExtraRoutes } from "./publicExtra.js";
+import { registerPremiumRoutes } from "./premium.js";
 import { registerSocialAuthRoutes } from "./socialAuth.js";
 import { registerExternalRoutes } from "./externals.js";
 import { registerScanRoutes } from "./scan.js";
@@ -80,6 +81,7 @@ export async function buildApp(prisma?: PrismaClient): Promise<FastifyInstance> 
   registerRsvpRoutes(app, db);
   registerMemberExtraRoutes(app, db);
   registerPublicExtraRoutes(app, db);
+  registerPremiumRoutes(app, db);
   registerSocialAuthRoutes(app, db);
   registerExternalRoutes(app, db);
   registerScanRoutes(app, db);

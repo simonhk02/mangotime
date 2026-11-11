@@ -274,14 +274,37 @@ struct ProtoPremiumDetail: View {
             premiumRow(icon: "paperclip", title: "上傳檔案", sub: "活動同備忘錄可以附加 PDF、文件")
             premiumRow(icon: "tag", title: "更多標籤色", sub: "解鎖全部標籤顏色")
             premiumRow(icon: "photo.on.rectangle", title: "更大相簿", sub: "相簿容量無上限")
-            Button { s.note("收費唔係而家嘅事") } label: {
-                Text("開始月付 HK$23.00").bold().foregroundStyle(.white)
+            if s.premium.premium {
+                Label("你係 Premium 會員 ✓", systemImage: "checkmark.seal.fill").bold().foregroundStyle(PT.green)
                     .frame(maxWidth: .infinity).padding(.vertical, 13)
-                    .background(PT.orange).clipShape(RoundedRectangle(cornerRadius: 10))
+            } else {
+                Button {
+                    Task { await s.premium.purchase() }
+                } label: {
+                    if s.premium.busy {
+                        ProgressView().tint(.white)
+                            .frame(maxWidth: .infinity).padding(.vertical, 13)
+                    } else {
+                        Text("開始月付 \(s.premium.product?.displayPrice ?? "HK$23.00")").bold().foregroundStyle(.white)
+                            .frame(maxWidth: .infinity).padding(.vertical, 13)
+                    }
+                }
+                .background(PT.orange).clipShape(RoundedRectangle(cornerRadius: 10))
+                .disabled(s.premium.busy)
+                .padding(.top, 18)
+                Button {
+                    Task { await s.premium.restore() }
+                } label: {
+                    Text("恢復購買").font(.subheadline).foregroundStyle(PT.orange)
+                        .frame(maxWidth: .infinity).padding(.vertical, 8)
+                }
+                Text("訂閱會自動續期，可以隨時喺 App Store 取消。").font(.caption2).foregroundStyle(PT.soft)
+                    .frame(maxWidth: .infinity).padding(.top, 4)
+                if s.premium.loadFailed {
+                    Text("（載入唔到 App Store 產品——產品重未上架，開發中）").font(.caption2).foregroundStyle(PT.soft)
+                        .frame(maxWidth: .infinity)
+                }
             }
-            .padding(.top, 18)
-            Text("免費使用 1 個月，之後每月 HK$23.00").font(.caption).foregroundStyle(PT.soft)
-                .frame(maxWidth: .infinity).padding(.top, 6)
         }
     }
     private func premiumRow(icon: String, title: String, sub: String) -> some View {

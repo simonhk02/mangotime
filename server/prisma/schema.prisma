@@ -15,6 +15,7 @@ model User {
   avatarUrl    String?
   birthdate String? // "MM-dd" 生日（成員生日自動上曆）
   digestTime  String? // "HH:MM" 今日行程推送時間（null = 08:00）
+  premiumUntil DateTime? // Premium 到期（null = 免費版）
   passwordHash String? // social-only 帳可以冇密碼
   createdAt    DateTime  @default(now())
   sessions     Session[]

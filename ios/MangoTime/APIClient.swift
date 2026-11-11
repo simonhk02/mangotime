@@ -275,6 +275,18 @@ extension APIClient {
         return res.calendarId
     }
 
+    func verifyPremium(transactionId: String, sandbox: Bool) async throws -> Bool {
+        struct P: Encodable { let transactionId: String; let sandbox: Bool }
+        struct R: Codable { let ok: Bool }
+        let res: R = try await request("POST", "/v1/premium/verify", body: P(transactionId: transactionId, sandbox: sandbox))
+        return res.ok
+    }
+    func premiumStatus() async throws -> Bool {
+        struct R: Codable { let premium: Bool }
+        let res: R = try await request("GET", "/v1/premium")
+        return res.premium
+    }
+
     func setRsvp(eventId: String, status: String) async throws {
         struct P: Encodable { let status: String }
         let _: [String: Bool] = try await request("POST", "/v1/events/\(eventId)/rsvp", body: P(status: status))

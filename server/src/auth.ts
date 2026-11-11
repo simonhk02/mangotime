@@ -13,7 +13,7 @@ function tokenHash(token: string): string {
 }
 
 export function publicUser(u: User) {
-  return { id: u.id, email: u.email, displayName: u.displayName, avatarUrl: u.avatarUrl, birthdate: u.birthdate, digestTime: u.digestTime, createdAt: u.createdAt };
+  return { id: u.id, email: u.email, displayName: u.displayName, avatarUrl: u.avatarUrl, birthdate: u.birthdate, digestTime: u.digestTime, premiumUntil: u.premiumUntil, createdAt: u.createdAt };
 }
 
 /** Resolve Bearer token → User or null. */

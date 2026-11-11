@@ -56,7 +56,10 @@ final class ProtoState: ObservableObject {
     @Published var photoPerm = false
 
     // LIVE 模式（api != nil）：月曆/行事曆/活動用真 server data，其餘畫面暫時 mock
-    var api: APIClient?
+    var api: APIClient? {
+        didSet { if let api { premium.attach(api) } }
+    }
+    let premium = PremiumManager()
     @Published var liveCalendars: [MTCalendar] = []
     @Published var liveEvents: [MTEvent] = []
     @Published var activeCalendarId: String?
