@@ -99,3 +99,10 @@ enum Mock {
         "想要新增或刪除相簿中的照片": ["相簿 → ＋上傳；長按照片可刪除。上傳檔案屬 Premium 功能。"],
     ]
 }
+
+
+/// 字體倍率（配合 dynamicTypeSize——fixed size 嘅位都要乘）
+@MainActor func mtScale() -> CGFloat {
+    let idx = UserDefaults.standard.integer(forKey: "font_size_idx")
+    return idx == 0 ? 0.85 : (idx == 2 ? 1.18 : 1.0)
+}

@@ -188,7 +188,7 @@ struct ProtoMonthScreen: View {
                 ForEach(Array(weekdays.enumerated()), id: \.offset) { i, w in
                     // 週日紅、週六藍（TimeTree 標配）
                     let realIdx = s.weekStartMonday ? (i + 1) % 7 : i // 0=日…6=六
-                    Text(w).font(.system(size: 11, weight: .medium))
+                    Text(w).font(.system(size: 11 * mtScale(), weight: .medium))
                         .foregroundStyle(realIdx == 0 ? PT.red : (realIdx == 6 ? Color(.systemBlue) : PT.soft))
                         .frame(maxWidth: .infinity)
                 }
@@ -217,7 +217,7 @@ struct ProtoMonthScreen: View {
                                     Circle().fill(PT.orange).frame(width: 24, height: 24)
                                 }
                                 Text("\(cal.component(.day, from: cell.date))")
-                                    .font(.system(size: 14, weight: isToday ? .bold : .regular))
+                                    .font(.system(size: 14 * mtScale(), weight: isToday ? .bold : .regular))
                                     .foregroundStyle(dayColor)
                             }
                             if let h = holiday, !cell.other, s.holidaysOn {
@@ -233,7 +233,7 @@ struct ProtoMonthScreen: View {
                             VStack(spacing: 2) {
                                 ForEach(evs.prefix(2)) { ev in
                                     Text(ev.title)
-                                        .font(.system(size: 9, weight: .medium))
+                                        .font(.system(size: 9 * mtScale(), weight: .medium))
                                         .lineLimit(1)
                                         .padding(.horizontal, 5).padding(.vertical, 2)
                                         .frame(maxWidth: .infinity, alignment: .leading)

@@ -159,6 +159,8 @@ final class MangoTimeUITests: XCTestCase {
             sleep(1)
             tapAny(app.staticTexts.matching(NSPredicate(format: "label CONTAINS '@'")).firstMatch)
             sleep(1)
+            // profile 頁多咗生日/改名 row——登出可能喺屏外，掃落去先
+            if !app.buttons["登出"].exists { app.swipeUp() }
             tapAny(app.buttons["登出"])
             sleep(2)
         }

@@ -324,6 +324,8 @@ struct ProtoRootView: View {
         }
         .overlay { if s.upsell { PremiumUpsell() } }
         .overlay { if s.photoPerm { PhotoPermAlert() } }
+        // 字體大小全 app 生效（dynamicTypeSize：小/中/大）
+        .dynamicTypeSize(s.fontSizeIdx == 0 ? .small : (s.fontSizeIdx == 2 ? .xxLarge : .medium))
         .environmentObject(s)
         .animation(.easeInOut(duration: 0.2), value: s.screen)
         .onAppear {

@@ -63,6 +63,17 @@ struct ProtoDisplaySettings: View {
             PRow(label: "第幾週", toggle: $s.weekNumbersOn)
             PRow(label: "公眾假期", toggle: $s.holidaysOn)
             PRow(label: "24 小時制", toggle: $s.hour24)
+            HStack {
+                Text("字體大小")
+                Spacer()
+                Picker("", selection: $s.fontSizeIdx) {
+                    Text("小").tag(0); Text("中").tag(1); Text("大").tag(2)
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 180)
+            }
+            .padding(.vertical, 12)
+            .overlay(Divider().opacity(0.6), alignment: .bottom)
             PRow(label: "行事曆顯示") { s.screen = .displayCalendar }
             if s.api != nil {
                 PRow(icon: "square.grid.2x2", label: "小工具顯示嘅行事曆", value: s.liveCalendars.first(where: { $0.id == s.widgetCalendarId })?.name ?? "跟而家揀緊嗰個") { s.screen = .widgetCalendar }
