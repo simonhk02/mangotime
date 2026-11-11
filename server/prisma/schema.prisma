@@ -93,6 +93,7 @@ model CalendarMember {
   userId     String
   user       User     @relation("Memberships", fields: [userId], references: [id], onDelete: Cascade)
   role       String   // "creator" | "member"
+  color      String?  // 每成員顏色（emerald/blue/red/purple/bright-orange）
   createdAt  DateTime @default(now())
 
   @@unique([calendarId, userId])
@@ -130,8 +131,19 @@ model Event {
   comments   Comment[]
   attachments Attachment[]
   participants EventParticipant[]
+  members    EventMember[]
+  pinned     Boolean @default(false)
 
   @@index([calendarId, startsAt])
+}
+
+model EventMember {
+  id      String @id @default(cuid())
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId  String
+
+  @@unique([eventId, userId])
 }
 
 model EventParticipant {

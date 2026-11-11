@@ -46,7 +46,7 @@ final class APIClient: ObservableObject {
     func request<T: Decodable>(_ method: String, _ path: String, body: Encodable? = nil) async throws -> T {
         var req = URLRequest(url: URL(string: baseURL + path)!)
         req.httpMethod = method
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if body != nil { req.setValue("application/json", forHTTPHeaderField: "Content-Type") }
         if let token { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         if let body { req.httpBody = try JSONEncoder().encode(AnyEncodable(body)) }
         let (data, resp) = try await URLSession.shared.data(for: req)

@@ -41,6 +41,17 @@ export async function buildApp(prisma?: PrismaClient): Promise<FastifyInstance> 
     bodyLimit: 16 * 1024 * 1024, // 16MB：base64 相片上傳（原圖 8MB 上限）
   });
 
+  // iOS/MCP 有時 POST 冇 body 但帶 Content-Type: application/json——fastify 預設會 400。
+  // 寬容處理：空 body 當 {}。
+  app.addContentTypeParser("application/json", { parseAs: "string" }, (_req, body, done) => {
+    if (body === "" || body == null) return done(null, {});
+    try {
+      done(null, JSON.parse(body as string));
+    } catch (err) {
+      done(err as Error);
+    }
+  });
+
   app.get("/health", async () => ({ ok: true, version: VERSION }));
   app.get("/v1/ping", async () => ({ pong: true }));
 
