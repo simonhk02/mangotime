@@ -55,7 +55,22 @@ struct ProtoMonthScreen: View {
                     }
                 }
                 HStack(spacing: 8) {
-                    Button { s.screen = .calendarList } label: {
+                    Menu {
+                        ForEach(s.liveCalendars) { cal in
+                            Button {
+                                s.activeCalendarId = cal.id
+                                s.markCalendarSeen(cal.id)
+                                Task { await s.loadLive() }
+                            } label: {
+                                HStack {
+                                    Text(cal.name)
+                                    if cal.id == s.activeCalendarId { Image(systemName: "checkmark") }
+                                }
+                            }
+                        }
+                        Divider()
+                        Button { s.screen = .calendarList } label: { Label("行事曆清單…", systemImage: "list.bullet") }
+                    } label: {
                         HStack(spacing: 5) {
                             Text(s.api != nil ? (s.liveCalendars.first(where: { $0.id == s.activeCalendarId })?.name ?? "行事曆") : "家庭日曆")
                                 .font(.subheadline).bold()
