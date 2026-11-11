@@ -983,8 +983,49 @@ struct ProtoMembers: View {
                     .background(PT.orange.opacity(0.12)).clipShape(RoundedRectangle(cornerRadius: 10))
             }
             .padding(.top, 14)
+
+            // 兒童/寵物帳童/寵物帳戶（冇 login 嘅名義成員，生日都會上曆）
+            VStack(alignment: .leading, spacing: 8) {
+                Text("兒童 / 寵物").font(.caption).foregroundStyle(PT.soft)
+                ForEach(children) { c in
+                    HStack(spacing: 12) {
+                        Circle().fill(PT.green).frame(width: 30, height: 30)
+                            .overlay(Text(String(c.name.prefix(1))).font(.caption).foregroundStyle(.white).bold())
+                        Text(c.name)
+                        Spacer()
+                        Button {
+                            Task {
+                                try? await s.api?.removeChild(calendarId: s.activeCalendarId ?? "", childId: c.id)
+                                await reloadChildren()
+                            }
+                        } label: { Image(systemName: "xmark.circle").font(.subheadline).foregroundStyle(PT.soft) }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.vertical, 6)
+                }
+                HStack {
+                    TextField("名（例如：細路、毛毛）", text: $childName).textFieldStyle(.roundedBorder)
+                    Button {
+                        let n = childName.trimmingCharacters(in: .whitespaces)
+                        guard !n.isEmpty else { return }
+                        childName = ""
+                        Task {
+                            try? await s.api?.addChild(calendarId: s.activeCalendarId ?? "", name: n)
+                            await reloadChildren()
+                            s.note("已加入 ✓")
+                        }
+                    } label: { Text("加入").bold().foregroundStyle(.white).padding(.horizontal, 12).padding(.vertical, 7).background(PT.green).clipShape(RoundedRectangle(cornerRadius: 8)) }
+                }
+            }
+            .padding(.top, 18)
         }
-        .onAppear { Task { await s.loadMembers() } }
+        .onAppear { Task { await s.loadMembers(); await reloadChildren() } }
+    }
+
+    @State private var children: [MTChild] = []
+    @State private var childName = ""
+    private func reloadChildren() async {
+        children = (try? await s.api?.listChildren(calendarId: s.activeCalendarId ?? "")) ?? []
     }
 
     private var mockMembers: some View {

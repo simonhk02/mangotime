@@ -66,3 +66,18 @@ test("生日：PATCH /v1/me set MM-dd → birthdays endpoint 露出", async () =
   assert.equal(bd.json().birthdays.length, 1);
   assert.equal(bd.json().birthdays[0].birthdate, "11-09");
 });
+
+test("兒童/寵物帳戶：開 → 列 → 生日入埋 birthdays → 刪", async () => {
+  const t1 = await signup("kid1@test.com", "爸");
+  const cal = await app.inject({ method: "POST", url: "/v1/calendars", headers: { authorization: `Bearer ${t1}` }, payload: { name: "K" } });
+  const calId = cal.json().calendar.id;
+  const add = await app.inject({ method: "POST", url: `/v1/calendars/${calId}/children`, headers: { authorization: `Bearer ${t1}` }, payload: { name: "細路", birthdate: "03-15" } });
+  assert.equal(add.statusCode, 201);
+  const childId = add.json().child.id;
+  const list = await app.inject({ method: "GET", url: `/v1/calendars/${calId}/children`, headers: { authorization: `Bearer ${t1}` } });
+  assert.equal(list.json().children.length, 1);
+  const bd = await app.inject({ method: "GET", url: `/v1/calendars/${calId}/birthdays`, headers: { authorization: `Bearer ${t1}` } });
+  assert.ok(bd.json().birthdays.some((b: any) => b.displayName === "細路" && b.birthdate === "03-15"));
+  const del = await app.inject({ method: "DELETE", url: `/v1/calendars/${calId}/children/${childId}`, headers: { authorization: `Bearer ${t1}` } });
+  assert.equal(del.statusCode, 204);
+});

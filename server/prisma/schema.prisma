@@ -64,6 +64,7 @@ model Calendar {
   creator       User             @relation("CreatedCalendars", fields: [creatorId], references: [id])
   createdAt     DateTime         @default(now())
   members       CalendarMember[]
+  children   ChildMember[]
   events        Event[]
   invites       Invite[]
   memos         Memo[]
@@ -309,4 +310,13 @@ model Webhook {
   createdAt  DateTime  @default(now())
 
   @@index([calendarId])
+}
+
+model ChildMember {
+  id         String   @id @default(cuid())
+  calendarId String
+  calendar   Calendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+  name       String
+  birthdate  String?  // "MM-dd"
+  createdAt  DateTime @default(now())
 }

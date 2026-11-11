@@ -65,6 +65,40 @@ export function registerMemberExtraRoutes(app: FastifyInstance, prisma: PrismaCl
     return reply.send({ ok: true });
   });
 
+  // 兒童/寵物帳戶（無 login 嘅名義成員）
+  app.post("/v1/calendars/:id/children", async (req, reply) => {
+    const user = await requireUser(prisma, req, reply);
+    if (!user) return;
+    const { id } = req.params as { id: string };
+    const member = await prisma.calendarMember.findUnique({ where: { calendarId_userId: { calendarId: id, userId: user.id } } });
+    if (!member) return reply.code(404).send({ error: "calendar not found" });
+    const { name, birthdate } = (req.body ?? {}) as { name?: string; birthdate?: string | null };
+    if (!name?.trim()) return reply.code(400).send({ error: "name required" });
+    if (birthdate != null && !/^\d{2}-\d{2}$/.test(birthdate)) return reply.code(400).send({ error: "birthdate must be MM-dd" });
+    const child = await prisma.childMember.create({ data: { calendarId: id, name: name.trim(), birthdate: birthdate ?? null } });
+    return reply.code(201).send({ child });
+  });
+
+  app.get("/v1/calendars/:id/children", async (req, reply) => {
+    const user = await requireUser(prisma, req, reply);
+    if (!user) return;
+    const { id } = req.params as { id: string };
+    const member = await prisma.calendarMember.findUnique({ where: { calendarId_userId: { calendarId: id, userId: user.id } } });
+    if (!member) return reply.code(404).send({ error: "calendar not found" });
+    const children = await prisma.childMember.findMany({ where: { calendarId: id }, orderBy: { createdAt: "asc" } });
+    return reply.send({ children });
+  });
+
+  app.delete("/v1/calendars/:id/children/:childId", async (req, reply) => {
+    const user = await requireUser(prisma, req, reply);
+    if (!user) return;
+    const { id, childId } = req.params as { id: string; childId: string };
+    const member = await prisma.calendarMember.findUnique({ where: { calendarId_userId: { calendarId: id, userId: user.id } } });
+    if (!member) return reply.code(404).send({ error: "calendar not found" });
+    await prisma.childMember.deleteMany({ where: { id: childId, calendarId: id } });
+    return reply.code(204).send();
+  });
+
   // 成員生日：GET /v1/calendars/:id/birthdays → [{ userId, displayName, birthdate }]
   app.get("/v1/calendars/:id/birthdays", async (req, reply) => {
     const user = await requireUser(prisma, req, reply);
@@ -76,10 +110,14 @@ export function registerMemberExtraRoutes(app: FastifyInstance, prisma: PrismaCl
       where: { calendarId: id },
       include: { user: { select: { id: true, displayName: true, birthdate: true } } },
     });
+    const children = await prisma.childMember.findMany({ where: { calendarId: id, birthdate: { not: null } } });
     return reply.send({
-      birthdays: members.filter((m) => m.user.birthdate).map((m) => ({
-        userId: m.userId, displayName: m.user.displayName, birthdate: m.user.birthdate,
-      })),
+      birthdays: [
+        ...members.filter((m) => m.user.birthdate).map((m) => ({
+          userId: m.userId, displayName: m.user.displayName, birthdate: m.user.birthdate!,
+        })),
+        ...children.map((c) => ({ userId: c.id, displayName: c.name, birthdate: c.birthdate! })),
+      ],
     });
   });
 }

@@ -174,6 +174,12 @@ struct MTEvent: Codable, Identifiable, Hashable {
     let updatedAt: String?
 }
 
+struct MTChild: Codable, Identifiable, Hashable {
+    let id: String
+    let name: String
+    let birthdate: String?
+}
+
 struct MTBirthday: Codable, Hashable {
     let userId: String
     let displayName: String
@@ -206,6 +212,20 @@ extension APIClient {
         let r: R = try await request("PATCH", "/v1/me", body: P(displayName: displayName, birthdate: birthdate))
         currentUser = r.user
     }
+    func listChildren(calendarId: String) async throws -> [MTChild] {
+        struct R: Codable { let children: [MTChild] }
+        let res: R = try await request("GET", "/v1/calendars/\(calendarId)/children")
+        return res.children
+    }
+    func addChild(calendarId: String, name: String, birthdate: String? = nil) async throws {
+        struct P: Encodable { let name: String; let birthdate: String? }
+        struct R: Codable { let child: MTChild }
+        let _: R = try await request("POST", "/v1/calendars/\(calendarId)/children", body: P(name: name, birthdate: birthdate))
+    }
+    func removeChild(calendarId: String, childId: String) async throws {
+        let _: EmptyResponse = try await request("DELETE", "/v1/calendars/\(calendarId)/children/\(childId)")
+    }
+
     func listBirthdays(calendarId: String) async throws -> [MTBirthday] {
         struct R: Codable { let birthdays: [MTBirthday] }
         let res: R = try await request("GET", "/v1/calendars/\(calendarId)/birthdays")

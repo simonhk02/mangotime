@@ -449,6 +449,26 @@ struct ProtoLiveEventDetail: View {
             PCard { RsvpSection(ev: ev) }.padding(.top, 14)
             PCard { LiveAttachments(eventId: ev.id) }.padding(.top, 14)
             PCard { LiveChat(eventId: ev.id) }.padding(.top, 14)
+            // 同一行程註冊到其他行事曆
+            if s.liveCalendars.count > 1 {
+                Menu {
+                    ForEach(s.liveCalendars.filter { $0.id != ev.calendarId }) { cal in
+                        Button(cal.name) {
+                            Task {
+                                guard let d = parseISODate(ev.startsAt) else { return }
+                                _ = try? await s.api?.createEvent(calendarId: cal.id, title: ev.title, startsAt: d, allDay: ev.allDay, repeatRule: ev.repeatRule, labelColor: ev.labelColor ?? "bright-orange", location: ev.location, note: ev.note, remindMin: ev.remindMin)
+                                s.note("已加入「\(cal.name)」✓")
+                            }
+                        }
+                    }
+                } label: {
+                    Label("加入其他行事曆", systemImage: "calendar.badge.plus").bold().foregroundStyle(PT.orange)
+                        .frame(maxWidth: .infinity).padding(.vertical, 12)
+                        .background(Color(.secondarySystemBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                }
+                .padding(.top, 12)
+            }
             HStack(spacing: 12) {
                 Button {
                     s.duplicateSource = ev
