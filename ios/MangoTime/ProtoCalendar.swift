@@ -34,6 +34,8 @@ func monthCells(base: Date, weekStartMonday: Bool) -> [DayCell] {
 
 struct ProtoMonthScreen: View {
     @EnvironmentObject var s: ProtoState
+    @State private var viewMode = 0 // 0=月 1=週 2=日 3=三日
+    @State private var dayAnchor = Date() // 直向檢視嘅基準日
     private let today = Date()
     private var cal: Calendar { Calendar(identifier: .gregorian) }
 
@@ -75,18 +77,20 @@ struct ProtoMonthScreen: View {
             }
             .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 10)
             .background(.bar)
-            Picker("", selection: Binding(get: { s.screen == .weekly ? 1 : 0 }, set: { s.screen = $0 == 1 ? .weekly : .month })) {
-                Text("月曆").tag(0); Text("週曆").tag(1)
+            Picker("", selection: $viewMode) {
+                Text("月曆").tag(0); Text("週曆").tag(1); Text("日").tag(2); Text("三日").tag(3)
             }
             .pickerStyle(.segmented)
             .padding(.horizontal, 16).padding(.vertical, 8)
 
-            if s.screen == .month {
+            if viewMode == 0 {
                 ScrollView {
                     monthGrid
                 }
                 .refreshable { await s.loadLive() }
-            } else { weekView }
+            } else if viewMode == 1 { weekView }
+            else if viewMode == 2 { dayView(dayCount: 1) }
+            else { dayView(dayCount: 3) }
         }
     }
 
@@ -331,6 +335,105 @@ struct ProtoMonthScreen: View {
                 }
             }
             .padding(.horizontal, 6)
+        }
+    }
+    // 直向檢視（一天/三天）——TimeTree 招牌 timeline：左時間尺，右邊日欄寬啲，全日活動釘頂
+    private func dayView(dayCount: Int) -> some View {
+        let days: [Date] = (0..<dayCount).compactMap { cal.date(byAdding: .day, value: $0, to: cal.startOfDay(for: dayAnchor)) }
+        return VStack(spacing: 0) {
+            // 日欄頭 + 左右切日
+            HStack(spacing: 0) {
+                Text("").frame(width: 34)
+                ForEach(days, id: \.self) { d in
+                    let isToday = cal.isDateInToday(d)
+                    VStack(spacing: 1) {
+                        Text(wd[cal.component(.weekday, from: d) - 1]).font(.system(size: 9)).foregroundStyle(PT.soft)
+                        Text("\(cal.component(.day, from: d))")
+                            .font(.system(size: 15, weight: isToday ? .bold : .regular))
+                            .foregroundStyle(isToday ? .white : .primary)
+                            .frame(width: 26, height: 26)
+                            .background(isToday ? Circle().fill(PT.orange) : nil)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.vertical, 4)
+            HStack {
+                Button { dayAnchor = cal.date(byAdding: .day, value: -dayCount, to: dayAnchor)! } label: { Image(systemName: "chevron.left").foregroundStyle(PT.orange) }
+                Spacer()
+                Button { dayAnchor = Date() } label: { Text("今日").font(.caption).foregroundStyle(PT.orange) }
+                Spacer()
+                Button { dayAnchor = cal.date(byAdding: .day, value: dayCount, to: dayAnchor)! } label: { Image(systemName: "chevron.right").foregroundStyle(PT.orange) }
+            }
+            .padding(.horizontal, 12).padding(.bottom, 4)
+            ScrollView {
+                HStack(alignment: .top, spacing: 0) {
+                    // 時間尺
+                    VStack(spacing: 0) {
+                        ForEach(0..<24, id: \.self) { h in
+                            Text(String(format: "%02d", h))
+                                .font(.system(size: 9))
+                                .foregroundStyle(PT.soft)
+                                .frame(width: 30, height: hourH, alignment: .topTrailing)
+                        }
+                    }
+                    ForEach(days, id: \.self) { d in
+                        let cell = DayCell(date: d, other: false)
+                        let dayEvs = eventsFor(cell)
+                        let timed = dayEvs.filter { ev in (ev.live != nil ? liveHour(ev.live!) : parseHour(ev.mock?.time ?? "")) != nil }
+                        let allDay = dayEvs.filter { ev in (ev.live != nil ? liveHour(ev.live!) : parseHour(ev.mock?.time ?? "")) == nil }
+                        ZStack(alignment: .topLeading) {
+                            VStack(spacing: 0) {
+                                ForEach(0..<24, id: \.self) { _ in
+                                    Divider().opacity(0.35).frame(height: hourH)
+                                }
+                            }
+                            // 全日活動釘頂（細條疊喺 00 上面）
+                            VStack(alignment: .leading, spacing: 2) {
+                                ForEach(allDay) { ev in
+                                    Button {
+                                        if let live = ev.live { s.screen = .liveEventDetail(live) }
+                                        else if let mock = ev.mock { s.screen = .eventDetail(mock) }
+                                    } label: {
+                                        Text(ev.title).font(.system(size: 9, weight: .medium)).lineLimit(1)
+                                            .padding(.horizontal, 5).padding(.vertical, 2)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .background(ev.color).foregroundStyle(.white)
+                                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 2)
+                            ForEach(timed) { ev in
+                                let range = (ev.live != nil ? liveHour(ev.live!) : parseHour(ev.mock?.time ?? ""))!
+                                Button {
+                                    if let live = ev.live { s.screen = .liveEventDetail(live) }
+                                    else if let mock = ev.mock { s.screen = .eventDetail(mock) }
+                                } label: {
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        Text(ev.title).font(.system(size: dayCount == 1 ? 12 : 9, weight: .medium)).lineLimit(2)
+                                        if dayCount == 1 {
+                                            Text(String(format: "%02d:%02d", Int(range.start), Int(range.start * 60) % 60))
+                                                .font(.system(size: 9)).opacity(0.85)
+                                        }
+                                    }
+                                    .padding(4)
+                                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                                    .frame(height: max(22, CGFloat(range.end - range.start) * hourH))
+                                    .background(ev.color.opacity(0.9))
+                                    .foregroundStyle(.white)
+                                    .clipShape(RoundedRectangle(cornerRadius: 5))
+                                }
+                                .buttonStyle(.plain)
+                                .padding(.horizontal, 2)
+                                .offset(y: CGFloat(range.start) * hourH)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .overlay(Rectangle().frame(width: 0.5).foregroundStyle(Color(.separator)), alignment: .leading)
+                    }
+                }
+            }
         }
     }
 }
