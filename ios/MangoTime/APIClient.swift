@@ -193,6 +193,15 @@ struct MTPublicCal: Codable, Identifiable {
     var id: String { slug }
 }
 
+struct MTPublicStats: Codable {
+    let slug: String
+    let likeCount: Int
+    let copyCount: Int
+    let eventCount: Int
+    let memberCount: Int
+    let noindex: Bool
+}
+
 struct MTBirthday: Codable, Hashable {
     let userId: String
     let displayName: String
@@ -285,6 +294,21 @@ extension APIClient {
         struct R: Codable { let premium: Bool }
         let res: R = try await request("GET", "/v1/premium")
         return res.premium
+    }
+
+    func publicStats(calendarId: String) async throws -> MTPublicStats {
+        try await request("GET", "/v1/calendars/\(calendarId)/public/stats")
+    }
+    func setNoindex(calendarId: String, noindex: Bool) async throws {
+        struct P: Encodable { let noindex: Bool }
+        struct R: Codable { let ok: Bool }
+        let _: R = try await request("PATCH", "/v1/calendars/\(calendarId)/public/noindex", body: P(noindex: noindex))
+    }
+    func bulkCreateEvents(calendarId: String, events: [[String: String]]) async throws -> Int {
+        struct P: Encodable { let events: [[String: String]] }
+        struct R: Codable { let created: Int }
+        let res: R = try await request("POST", "/v1/calendars/\(calendarId)/events/bulk", body: P(events: events))
+        return res.created
     }
 
     func setRsvp(eventId: String, status: String) async throws {

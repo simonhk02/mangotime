@@ -57,7 +57,7 @@ export function registerPublicExtraRoutes(app: FastifyInstance, prisma: PrismaCl
       if (!e.title?.trim() || !e.startsAt) return reply.code(400).send({ error: "each event needs title + startsAt" });
       const d = new Date(e.startsAt);
       if (isNaN(d.getTime())) return reply.code(400).send({ error: `bad startsAt: ${e.startsAt}` });
-      valid.push({ title: e.title.trim(), startsAt: d, allDay: e.allDay === true, location: e.location ?? null, note: e.note ?? null });
+      valid.push({ title: e.title.trim(), startsAt: d, allDay: e.allDay === true || (e as any).allDay === "true", location: e.location ?? null, note: e.note ?? null });
     }
     const created = await prisma.event.createMany({
       data: valid.map((v) => ({ ...v, calendarId: id, creatorId: user.id })),
