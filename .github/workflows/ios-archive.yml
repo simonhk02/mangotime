@@ -33,6 +33,15 @@ jobs:
         run: xcodegen generate
         working-directory: ios
 
+      - name: Janitor — revoke junk CI development certs (dev cert quota 10)
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8_B64 }}
+        run: |
+          pip3 install --quiet pyjwt
+          python3 scripts/clean_ci_certs.py
+
       - name: Install ASC API key for xcodebuild
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
