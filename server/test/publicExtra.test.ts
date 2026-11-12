@@ -72,3 +72,34 @@ test("公開平台全鏈：開公開連結 → 目錄見到 → 按讚 → my li
   const dir3 = await app.inject({ method: "GET", url: "/v1/public-directory", headers: { authorization: `Bearer ${t2}` } });
   assert.equal(dir3.json().calendars.find((c: any) => c.slug === slug).likeCount, 0);
 });
+
+test("管理者：stats + noindex（目錄踢走）+ 批次登錄", async () => {
+  const t1 = await signup("adm1@test.com", "Admin");
+  const cal = await app.inject({ method: "POST", url: "/v1/calendars", headers: { authorization: `Bearer ${t1}` }, payload: { name: "Admin 曆" } });
+  const calId = cal.json().calendar.id;
+  const pub = await app.inject({ method: "POST", url: `/v1/calendars/${calId}/public`, headers: { authorization: `Bearer ${t1}` } });
+  const slug = pub.json().publicSlug ?? pub.json().slug;
+
+  // 批次登錄 3 個活動
+  const bulk = await app.inject({ method: "POST", url: `/v1/calendars/${calId}/events/bulk`, headers: { authorization: `Bearer ${t1}` }, payload: { events: [
+    { title: "A", startsAt: "2026-11-20T10:00:00Z" },
+    { title: "B", startsAt: "2026-11-21T10:00:00Z", allDay: true, location: "屋企" },
+    { title: "C", startsAt: "2026-11-22T10:00:00Z" },
+  ] } });
+  assert.equal(bulk.statusCode, 201);
+  assert.equal(bulk.json().created, 3);
+  // 超 100 要 400
+  const tooMany = await app.inject({ method: "POST", url: `/v1/calendars/${calId}/events/bulk`, headers: { authorization: `Bearer ${t1}` }, payload: { events: Array(101).fill({ title: "x", startsAt: "2026-11-20T10:00:00Z" }) } });
+  assert.equal(tooMany.statusCode, 400);
+
+  // stats
+  const st = await app.inject({ method: "GET", url: `/v1/calendars/${calId}/public/stats`, headers: { authorization: `Bearer ${t1}` } });
+  assert.equal(st.json().eventCount, 3);
+  assert.equal(st.json().noindex, false);
+
+  // noindex 開 → 目錄冇咗
+  const ni = await app.inject({ method: "PATCH", url: `/v1/calendars/${calId}/public/noindex`, headers: { authorization: `Bearer ${t1}` }, payload: { noindex: true } });
+  assert.equal(ni.statusCode, 200);
+  const dir = await app.inject({ method: "GET", url: "/v1/public-directory" });
+  assert.ok(!dir.json().calendars.some((c: any) => c.slug === slug), "noindex 曆唔應該喺目錄出現");
+});

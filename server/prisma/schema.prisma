@@ -75,6 +75,8 @@ model Calendar {
   externals     ExternalCalendar[]
   webhooks      Webhook[]
   publicSlug  String?  @unique // 5.2 公開唯讀 link（null = 未開）
+  publicNoindex Boolean @default(false) // 唔俾搜尋引擎收錄
+  copyCount   Int     @default(0)       // 幾多人抄咗入自己曆
 }
 
 // Task 1.3 — Invite link（一個行事曆可以有多條，revokedAt 標記失效）

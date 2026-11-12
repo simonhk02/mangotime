@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Calendar" ADD COLUMN "publicNoindex" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "Calendar" ADD COLUMN "copyCount" INTEGER NOT NULL DEFAULT 0;
