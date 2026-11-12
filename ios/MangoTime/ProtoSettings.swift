@@ -171,6 +171,14 @@ struct ProtoNotifSettings: View {
             PRow(label: "邀請", toggle: $notifInvite)
             PRow(label: "新活動", toggle: $notifNewEvent)
             PRow(label: "留言", toggle: $notifComment)
+            PRow(label: "無行程嘅日子都通知", toggle: Binding(
+                get: { s.api?.currentUser?.digestWhenEmpty ?? true },
+                set: { v in Task { try? await s.api?.updateMePrefs(digestWhenEmpty: v) } }
+            ))
+            PRow(label: "只通知我有參加嘅活動", toggle: Binding(
+                get: { s.api?.currentUser?.notifyOnlyMine ?? false },
+                set: { v in Task { try? await s.api?.updateMePrefs(notifyOnlyMine: v) } }
+            ))
             PRow(label: "活動開始前", value: "1 小時前") { s.note("提醒時間（推送功能做緊）") }
             // 每日 digest 時間（server 喺呢個鐘推「今日行程」）
             HStack {

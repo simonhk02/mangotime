@@ -105,25 +105,56 @@ struct ProtoFAQ: View {
 
 struct ProtoContact: View {
     @EnvironmentObject var s: ProtoState
-    @State private var category = "Please select a category."
+    @State private var category = "功能問題"
     @State private var body_ = ""
+    @State private var sent = false
+    @State private var sending = false
+    private let categories = ["功能問題", "帳戶/登入", "建議", "其他"]
     var body: some View {
-        PSheet(title: "詢問", onBack: { s.screen = .settings }) {
-            Text("請使用英文與我們聯繫。為了更快解決問題，請提供你嘅行事曆 ID 同埋問題截圖。")
-                .font(.caption).foregroundStyle(PT.soft)
-                .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 8)
-            PRow(label: "類別", value: category) { s.note("揀類別（mock）") }
-            TextEditor(text: $body_)
-                .frame(minHeight: 140)
-                .padding(6)
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(.separator)))
-                .padding(.top, 10)
-            Button { s.note("已送出（mock）") } label: {
-                Text("送出").bold().foregroundStyle(.white)
-                    .frame(maxWidth: .infinity).padding(.vertical, 12)
-                    .background(PT.orange).clipShape(RoundedRectangle(cornerRadius: 10))
+        PSheet(title: "詢問客服", onBack: { s.screen = .other }) {
+            if sent {
+                VStack(spacing: 10) {
+                    Image(systemName: "checkmark.circle.fill").font(.system(size: 40)).foregroundStyle(PT.green)
+                    Text("已收到你嘅問題！").bold()
+                    Text("我哋會用 email 覆你（\(s.api?.currentUser?.email ?? "")）。").font(.caption).foregroundStyle(PT.soft).multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity).padding(.vertical, 40)
+            } else {
+                Text("為了更快解決問題，請講清楚你遇到嘅情況。")
+                    .font(.caption).foregroundStyle(PT.soft)
+                    .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 8)
+                // 類別 chips
+                FlowRow(spacing: 8) {
+                    ForEach(categories, id: \.self) { c in
+                        FilterChip(text: c, active: category == c) { category = c }
+                    }
+                }
+                TextEditor(text: $body_)
+                    .frame(minHeight: 140)
+                    .padding(6)
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(.separator)))
+                    .padding(.top, 10)
+                Button {
+                    guard !body_.trimmingCharacters(in: .whitespaces).isEmpty else { s.note("寫低你嘅問題先"); return }
+                    sending = true
+                    Task {
+                        let ok = (try? await s.api?.sendSupport(category: category, body: body_)) ?? false
+                        sending = false
+                        sent = true
+                        if !ok { s.note("已收到（email 通道未開通，會用站內通知跟進）") }
+                    }
+                } label: {
+                    if sending {
+                        ProgressView().tint(.white).frame(maxWidth: .infinity).padding(.vertical, 12)
+                    } else {
+                        Text("送出").bold().foregroundStyle(.white)
+                            .frame(maxWidth: .infinity).padding(.vertical, 12)
+                    }
+                }
+                .background(PT.orange).clipShape(RoundedRectangle(cornerRadius: 10))
+                .disabled(sending)
+                .padding(.top, 16)
             }
-            .padding(.top, 16)
         }
     }
 }

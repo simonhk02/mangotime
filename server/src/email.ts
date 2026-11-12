@@ -20,6 +20,12 @@ export async function sendEmail(to: string, subject: string, text: string): Prom
   } catch { return false; }
 }
 
+/** 客服表單 → email 俾 admin（references: TimeTree 詢問頁） */
+export async function sendSupportEmail(fromEmail: string, category: string, body: string, device: string) {
+  const admin = (process.env.ADMIN_EMAILS ?? "simonhk02@gmail.com").split(",")[0];
+  return sendEmail(admin, `[MangoTime 客服] ${category}`, `由: ${fromEmail}\n裝置: ${device}\n\n${body}`);
+}
+
 /** 公告 → 全體用戶 email（notices.ts 開公告嗰陣叫） */
 export async function broadcastNoticeEmail(prisma: PrismaClient, title: string, body: string) {
   const users = await prisma.user.findMany({ select: { email: true } });

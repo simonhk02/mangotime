@@ -19,6 +19,17 @@ async function requireUser(prisma: PrismaClient, req: FastifyRequest, reply: Fas
 }
 
 export function registerMemberExtraRoutes(app: FastifyInstance, prisma: PrismaClient) {
+  // 詢問客服
+  app.post("/v1/support", async (req, reply) => {
+    const user = await requireUser(prisma, req, reply);
+    if (!user) return;
+    const { category, body, device } = (req.body ?? {}) as { category?: string; body?: string; device?: string };
+    if (!category?.trim() || !body?.trim()) return reply.code(400).send({ error: "category + body required" });
+    const { sendSupportEmail } = await import("./email.js");
+    const sent = await sendSupportEmail(user.email, category.trim(), body.trim(), device ?? "unknown");
+    return reply.code(201).send({ ok: true, emailed: sent });
+  });
+
   // 封面圖檔案：GET /v1/covers/:name（public read——封面本身就要公開）
   app.get("/v1/covers/:name", async (req, reply) => {
     const { name } = req.params as { name: string };

@@ -33,14 +33,19 @@ export function startDigestLoop(prisma: PrismaClient) {
       try {
         const memberships = await prisma.calendarMember.findMany({ where: { userId: u.id }, select: { calendarId: true } });
         if (memberships.length === 0) continue;
-        const events = await prisma.event.findMany({
+        let events = await prisma.event.findMany({
           where: {
             calendarId: { in: memberships.map((m) => m.calendarId) },
             startsAt: { gte: dayStart, lte: dayEnd },
           },
           orderBy: { startsAt: "asc" },
           take: 5,
+          include: { members: true },
         });
+        // 只通知有參加嘅活動（memberIds 空 = 全部成員）
+        if (u.notifyOnlyMine) {
+          events = events.filter((e) => e.members.length === 0 || e.members.some((m) => m.userId === u.id));
+        }
         // 外部日曆（.ics 訂閱）今日有活動都提（攞 cache）
         let extCount = 0;
         try {
@@ -52,6 +57,8 @@ export function startDigestLoop(prisma: PrismaClient) {
           }).length;
         } catch { /* 外曆掛咗唔影響 digest */ }
         const send = sender ?? (async (p, userId, title, body) => { await sendPushToUser(p, userId, title, body); });
+        // 無行程都通知？（用戶可閂）
+        if (events.length === 0 && extCount === 0 && !u.digestWhenEmpty) continue;
         if (events.length === 0 && extCount === 0) {
           await send(prisma, u.id, "MangoTime", "今日冇行程，好好抖下 ☀️");
         } else if (events.length === 0) {

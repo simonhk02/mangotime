@@ -7,6 +7,8 @@ struct MTUser: Codable {
     let avatarUrl: String?
     let birthdate: String?
     let digestTime: String?
+    let digestWhenEmpty: Bool?
+    let notifyOnlyMine: Bool?
 }
 
 struct AuthResponse: Codable {
@@ -290,6 +292,18 @@ extension APIClient {
         let res: R = try await request("POST", "/v1/premium/verify", body: P(transactionId: transactionId, sandbox: sandbox))
         return res.ok
     }
+    func updateMePrefs(digestWhenEmpty: Bool? = nil, notifyOnlyMine: Bool? = nil) async throws {
+        struct P: Encodable { let digestWhenEmpty: Bool?; let notifyOnlyMine: Bool? }
+        struct R: Codable { let user: MTUser }
+        let _: R = try await request("PATCH", "/v1/me", body: P(digestWhenEmpty: digestWhenEmpty, notifyOnlyMine: notifyOnlyMine))
+    }
+    func sendSupport(category: String, body: String) async throws -> Bool {
+        struct P: Encodable { let category: String; let body: String; let device: String }
+        struct R: Codable { let ok: Bool; let emailed: Bool }
+        let res: R = try await request("POST", "/v1/support", body: P(category: category, body: body, device: "iOS"))
+        return res.emailed
+    }
+
     func premiumStatus() async throws -> Bool {
         struct R: Codable { let premium: Bool }
         let res: R = try await request("GET", "/v1/premium")

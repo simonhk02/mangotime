@@ -292,7 +292,18 @@ struct ProtoOther: View {
                         PRow(icon: "gearshape", label: "App 設定") { s.screen = .settings }
                         PRow(icon: "megaphone", label: "公告") { s.screen = .noticeBoard }
                         PRow(icon: "book", label: "MangoTime 使用手冊") { s.screen = .userGuide }
-                        PRow(icon: "questionmark.circle", label: "使用方法") { s.screen = .helpHome }
+
+                        PRow(icon: "envelope", label: "詢問客服") { s.screen = .contact }
+                        ShareLink(item: "https://mangotime.149-28-154-219.sslip.io/") {
+                            HStack(spacing: 10) {
+                                Image(systemName: "heart").font(.subheadline).foregroundStyle(PT.soft).frame(width: 20)
+                                Text("推薦給朋友").foregroundStyle(.primary)
+                                Spacer()
+                                Image(systemName: "chevron.right").font(.caption).foregroundStyle(PT.soft)
+                            }
+                            .padding(.vertical, 12)
+                        }
+                        .buttonStyle(.plain)
                     }
                     .padding(.top, 12)
                 }

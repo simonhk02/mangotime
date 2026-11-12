@@ -13,7 +13,7 @@ function tokenHash(token: string): string {
 }
 
 export function publicUser(u: User) {
-  return { id: u.id, email: u.email, displayName: u.displayName, avatarUrl: u.avatarUrl, birthdate: u.birthdate, digestTime: u.digestTime, premiumUntil: u.premiumUntil, createdAt: u.createdAt };
+  return { id: u.id, email: u.email, displayName: u.displayName, avatarUrl: u.avatarUrl, birthdate: u.birthdate, digestTime: u.digestTime, digestWhenEmpty: u.digestWhenEmpty, notifyOnlyMine: u.notifyOnlyMine, premiumUntil: u.premiumUntil, createdAt: u.createdAt };
 }
 
 /** Resolve Bearer token → User or null. */
@@ -95,8 +95,8 @@ export function registerAuthRoutes(app: FastifyInstance, prisma: PrismaClient) {
   app.patch("/v1/me", async (req, reply) => {
     const user = await userFromRequest(prisma, req);
     if (!user) return reply.code(401).send({ error: "unauthorized" });
-    const body = (req.body ?? {}) as { displayName?: string; avatarUrl?: string | null; birthdate?: string | null; digestTime?: string | null };
-    const data: { displayName?: string; avatarUrl?: string | null; birthdate?: string | null; digestTime?: string | null } = {};
+    const body = (req.body ?? {}) as { displayName?: string; avatarUrl?: string | null; birthdate?: string | null; digestTime?: string | null; digestWhenEmpty?: boolean; notifyOnlyMine?: boolean };
+    const data: { displayName?: string; avatarUrl?: string | null; birthdate?: string | null; digestTime?: string | null; digestWhenEmpty?: boolean; notifyOnlyMine?: boolean } = {};
     if (body.displayName !== undefined) {
       if (!body.displayName.trim()) return reply.code(400).send({ error: "displayName cannot be empty" });
       data.displayName = body.displayName.trim();
@@ -106,6 +106,8 @@ export function registerAuthRoutes(app: FastifyInstance, prisma: PrismaClient) {
       if (body.birthdate !== null && !/^\d{2}-\d{2}$/.test(body.birthdate)) return reply.code(400).send({ error: "birthdate must be MM-dd" });
       data.birthdate = body.birthdate;
     }
+    if (body.digestWhenEmpty !== undefined) data.digestWhenEmpty = body.digestWhenEmpty === true;
+    if (body.notifyOnlyMine !== undefined) data.notifyOnlyMine = body.notifyOnlyMine === true;
     if (body.digestTime !== undefined) {
       if (body.digestTime !== null && !/^\d{2}:\d{2}$/.test(body.digestTime)) return reply.code(400).send({ error: "digestTime must be HH:MM" });
       data.digestTime = body.digestTime;
