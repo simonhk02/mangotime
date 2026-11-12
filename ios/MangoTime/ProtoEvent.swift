@@ -96,6 +96,7 @@ struct ProtoEventForm: View {
     @State private var repeatRule = "none"
     @State private var remindMin: Int? = nil
     @State private var showMemberPicker = false
+    @State private var urlText = ""
     @State private var selectedMemberIds: Set<String> = []
     @State private var loc = ""
     @State private var noteText = ""
@@ -117,7 +118,7 @@ struct ProtoEventForm: View {
                     guard !t.isEmpty else { return }
                     if let ev = editing {
                         Task {
-                            _ = try? await s.api?.updateEvent(eventId: ev.id, title: t, startsAt: date, allDay: allDay, labelColor: labelKeys[labelIdx], location: loc.isEmpty ? nil : loc, note: noteText.isEmpty ? nil : noteText, remindMin: remindMin, memberIds: selectedMemberIds.isEmpty ? [] : Array(selectedMemberIds))
+                            _ = try? await s.api?.updateEvent(eventId: ev.id, title: t, startsAt: date, allDay: allDay, labelColor: labelKeys[labelIdx], location: loc.isEmpty ? nil : loc, note: noteText.isEmpty ? nil : noteText, remindMin: remindMin, memberIds: selectedMemberIds.isEmpty ? [] : Array(selectedMemberIds), url: urlText.isEmpty ? nil : urlText)
                             s.note("已更新 ✓")
                             await s.loadLive()
                             s.screen = .month
@@ -127,7 +128,7 @@ struct ProtoEventForm: View {
                             if saveAsMemo, let calId = s.activeCalendarId {
                                 _ = try? await s.api?.createMemo(calendarId: calId, title: t, body: noteText)
                             }
-                            await s.createLiveEvent(title: t, date: date, allDay: allDay, labelColor: labelKeys[labelIdx], location: loc.isEmpty ? nil : loc, noteText: noteText.isEmpty ? nil : noteText, repeatRule: repeatRule, remindMin: remindMin, memberIds: selectedMemberIds.isEmpty ? nil : Array(selectedMemberIds))
+                            await s.createLiveEvent(title: t, date: date, allDay: allDay, labelColor: labelKeys[labelIdx], location: loc.isEmpty ? nil : loc, noteText: noteText.isEmpty ? nil : noteText, repeatRule: repeatRule, remindMin: remindMin, memberIds: selectedMemberIds.isEmpty ? nil : Array(selectedMemberIds), url: urlText.isEmpty ? nil : urlText)
                         }
                     }
                 } else {
@@ -286,7 +287,13 @@ struct ProtoEventForm: View {
                     .padding(.vertical, 12)
                 } else {
                     PRow(icon: "mappin", label: "地點", value: "未填") { s.note("地點輸入（mock）") }
-                    PRow(icon: "link", label: "網址", value: "未填") { s.note("網址輸入（mock）") }
+                    HStack {
+                        Label("網址", systemImage: "link")
+                        Spacer()
+                        TextField("https://…", text: $urlText).multilineTextAlignment(.trailing).foregroundStyle(PT.soft)
+                            .keyboardType(.URL).autocorrectionDisabled().textInputAutocapitalization(.never)
+                    }
+                    .padding(.vertical, 12).overlay(Divider().opacity(0.6), alignment: .bottom)
                     PRow(icon: "note.text", label: "備註", value: "未填") { s.screen = .noteEdit }
                 }
             }
@@ -309,6 +316,7 @@ struct ProtoEventForm: View {
                 noteText = ev.note ?? ""
                 remindMin = ev.remindMin
                 selectedMemberIds = Set(ev.memberIds ?? [])
+                urlText = ev.url ?? ""
             } else if let src = s.duplicateSource {
                 // 複製活動：拎晒欄位，日期跟原本
                 title = src.title
@@ -320,6 +328,7 @@ struct ProtoEventForm: View {
                 repeatRule = src.repeatRule
                 remindMin = src.remindMin
                 selectedMemberIds = Set(src.memberIds ?? [])
+                urlText = src.url ?? ""
                 s.duplicateSource = nil
             }
         }
@@ -442,6 +451,17 @@ struct ProtoLiveEventDetail: View {
                     PRow(icon: "person.2", label: "成員", value: names.isEmpty ? "\(ids.count) 位" : names.joined(separator: "、"))
                 } else {
                     PRow(icon: "person.2", label: "成員", value: "全部成員")
+                }
+                if let u = ev.url, !u.isEmpty, let link = URL(string: u) {
+                    Link(destination: link) {
+                        HStack(spacing: 10) {
+                            Image(systemName: "link").font(.subheadline).foregroundStyle(PT.soft).frame(width: 20)
+                            Text("網址").foregroundStyle(.primary)
+                            Spacer()
+                            Text(u).font(.subheadline).foregroundStyle(Color(.systemBlue)).lineLimit(1)
+                        }
+                        .padding(.vertical, 12)
+                    }
                 }
                 if let note = ev.note, !note.isEmpty { PRow(icon: "note.text", label: "備註", value: note) }
             }

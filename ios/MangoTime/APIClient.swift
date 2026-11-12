@@ -344,7 +344,7 @@ extension APIClient {
         return res.events
     }
 
-    func createEvent(calendarId: String, title: String, startsAt: Date, allDay: Bool, repeatRule: String, labelColor: String, location: String?, note: String?, remindMin: Int? = nil, memberIds: [String]? = nil, pinned: Bool? = nil) async throws -> MTEvent {
+    func createEvent(calendarId: String, title: String, startsAt: Date, allDay: Bool, repeatRule: String, labelColor: String, location: String?, note: String?, remindMin: Int? = nil, memberIds: [String]? = nil, pinned: Bool? = nil, url: String? = nil) async throws -> MTEvent {
         struct Payload: Encodable {
             let title: String
             let startsAt: String
@@ -356,11 +356,12 @@ extension APIClient {
             let remindMin: Int?
             let memberIds: [String]?
             let pinned: Bool?
+            let url: String?
         }
         let iso = ISO8601DateFormatter()
         let res: EventResponse = try await request(
             "POST", "/v1/calendars/\(calendarId)/events",
-            body: Payload(title: title, startsAt: iso.string(from: startsAt), allDay: allDay, repeatRule: repeatRule, labelColor: labelColor, location: location, note: note, remindMin: remindMin, memberIds: memberIds, pinned: pinned)
+            body: Payload(title: title, startsAt: iso.string(from: startsAt), allDay: allDay, repeatRule: repeatRule, labelColor: labelColor, location: location, note: note, remindMin: remindMin, memberIds: memberIds, pinned: pinned, url: url)
         )
         return res.event
     }
@@ -370,7 +371,7 @@ extension APIClient {
         let _: EmptyResponse = try await request("DELETE", "/v1/calendars/\(calendarId)/events/\(eventId)", body: Optional<Empty>.none)
     }
 
-    func updateEvent(eventId: String, title: String?, startsAt: Date?, allDay: Bool?, labelColor: String?, location: String?, note: String?, remindMin: Int? = nil, memberIds: [String]? = nil, pinned: Bool? = nil) async throws -> MTEvent {
+    func updateEvent(eventId: String, title: String?, startsAt: Date?, allDay: Bool?, labelColor: String?, location: String?, note: String?, remindMin: Int? = nil, memberIds: [String]? = nil, pinned: Bool? = nil, url: String? = nil) async throws -> MTEvent {
         struct Payload: Encodable {
             let title: String?
             let startsAt: String?
@@ -381,11 +382,12 @@ extension APIClient {
             let remindMin: Int?
             let memberIds: [String]?
             let pinned: Bool?
+            let url: String?
         }
         let iso = ISO8601DateFormatter()
         let res: EventResponse = try await request(
             "PATCH", "/v1/events/\(eventId)",
-            body: Payload(title: title, startsAt: startsAt.map { iso.string(from: $0) }, allDay: allDay, labelColor: labelColor, location: location, note: note, remindMin: remindMin, memberIds: memberIds, pinned: pinned)
+            body: Payload(title: title, startsAt: startsAt.map { iso.string(from: $0) }, allDay: allDay, labelColor: labelColor, location: location, note: note, remindMin: remindMin, memberIds: memberIds, pinned: pinned, url: url)
         )
         return res.event
     }
