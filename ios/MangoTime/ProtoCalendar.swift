@@ -92,6 +92,32 @@ struct ProtoMonthScreen: View {
             }
             .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 10)
             .background(.bar)
+            // 行事曆 chips 橫列（TimeTree 月曆頂）：撳 = 顯示/隱藏嗰個曆
+            if s.api != nil && s.liveCalendars.count > 1 {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(s.liveCalendars) { cal in
+                            let hidden = s.hiddenCalendarIds.contains(cal.id)
+                            Button {
+                                if hidden { s.hiddenCalendarIds.remove(cal.id) } else { s.hiddenCalendarIds.insert(cal.id) }
+                            } label: {
+                                HStack(spacing: 5) {
+                                    Circle().fill(hidden ? Color(.systemGray3) : PT.orange).frame(width: 8, height: 8)
+                                    Text(cal.name).font(.caption2).bold(hidden)
+                                        .foregroundStyle(hidden ? PT.soft : .primary)
+                                        .lineLimit(1)
+                                }
+                                .padding(.horizontal, 10).padding(.vertical, 6)
+                                .background(Color(.secondarySystemBackground))
+                                .clipShape(Capsule())
+                                .opacity(hidden ? 0.6 : 1)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 16).padding(.vertical, 6)
+                }
+            }
             if s.pendingCount > 0 {
                 HStack(spacing: 8) {
                     Image(systemName: "exclamationmark.circle.fill").foregroundStyle(PT.orange)
@@ -243,7 +269,10 @@ struct ProtoMonthScreen: View {
                                 if isToday {
                                     Circle().fill(PT.orange).frame(width: 24, height: 24)
                                 }
-                                Text("\(cal.component(.day, from: cell.date))")
+                                let dayN = cal.component(.day, from: cell.date)
+                                Text(cell.other || dayN == 1
+                                     ? "\(cal.component(.month, from: cell.date))/\(dayN)"
+                                     : "\(dayN)")
                                     .font(.system(size: 14 * mtScale(), weight: isToday ? .bold : .regular))
                                     .foregroundStyle(dayColor)
                             }
