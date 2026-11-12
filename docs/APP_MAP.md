@@ -89,8 +89,8 @@
 | 站內通知 | ✅ | |
 | APNs 推送 | ✅ | server 全鏈（等你開 key）|
 | 通知時間自訂 | ✅ | User.digestTime + server digest loop + 設定 picker | 死 08:00 |
-| 無行程都通知 | ⬜ | 「無行程的日子也通知」|
-| 只通知有參加的行事曆 | ⬜ | |
+| 無行程都通知 | ✅ | digestWhenEmpty toggle + digest 尊重 | 「無行程的日子也通知」|
+| 只通知有參加的行事曆 | ✅ | notifyOnlyMine（digest 按 EventMember 過濾）| |
 | 外部行事曆通知 | ✅ | digest 計埋外曆（cache）| |
 | 服務電郵 | ✅ | Resend 通道 + 官方公告 email 全體（要 RESEND_API_KEY）| |
 
@@ -126,8 +126,8 @@
 |---|---|---|
 | Premium（收費）| 🟨 | 產品+verify+StoreKit 全鏈；HK$23 定價要 console 揀（API 冇）| TimeTree 賣點：無廣告+上傳文件 HK$23/月 |
 | 幫助中心/FAQ/使用手冊 | 🟨 | static 頁有 |
-| 詢問客服（附圖 form）| ⬜ | |
-| 推薦給朋友（share sheet）| ⬜ | |
+| 詢問客服 | ✅ | 類別 chips + 內容 → email 俾 admin | |
+| 推薦給朋友（share sheet）| ✅ | 其他頁 ShareLink | |
 | 版本資訊/條款/私隱 | 🟨 | 上架前要補私隱政策頁 |
 
 ## I. 生態
