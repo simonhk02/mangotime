@@ -76,6 +76,41 @@ final class ProtoState: ObservableObject {
         didSet { UserDefaults.standard.set(widgetCalendarId, forKey: "widget_cal"); Task { @MainActor in self.syncWidget() } }
     }
 
+    // 「！」離線暫存：開活動失敗（冇網）→ 本機 queue，有網補發
+    @Published var pendingCount = UserDefaults.standard.integer(forKey: "pending_events_n")
+    private var pendingEvents: [[String: String]] {
+        get {
+            guard let data = UserDefaults.standard.data(forKey: "pending_events"),
+                  let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: String]] else { return [] }
+            return arr
+        }
+        set {
+            UserDefaults.standard.set(try? JSONSerialization.data(withJSONObject: newValue), forKey: "pending_events")
+            pendingCount = newValue.count
+        }
+    }
+    func stashEvent(title: String, iso: String, allDay: Bool, labelColor: String) {
+        var q = pendingEvents
+        q.append(["title": title, "startsAt": iso, "allDay": allDay ? "1" : "0", "labelColor": labelColor])
+        pendingEvents = q
+    }
+    /// 有網嗰陣補發
+    func flushPending() async {
+        guard let api, let calId = activeCalendarId else { return }
+        var q = pendingEvents
+        var flushed = 0
+        while let first = q.first {
+            guard let d = parseISODate(first["startsAt"] ?? "") else { q.removeFirst(); continue }
+            do {
+                _ = try await api.createEvent(calendarId: calId, title: first["title"] ?? "", startsAt: d, allDay: first["allDay"] == "1", repeatRule: "none", labelColor: first["labelColor"] ?? "bright-orange", location: nil, note: nil)
+                q.removeFirst()
+                flushed += 1
+            } catch { break } // 仲係冇網——留返下次
+        }
+        pendingEvents = q
+        if flushed > 0 { note("補發咗 \(flushed) 個離線活動 ✓") }
+    }
+
     // NEW 未讀標記：per-calendar 最後查看時間（本機儲存）
     private var lastSeen: [String: Double] {
         get { (UserDefaults.standard.dictionary(forKey: "cal_seen") as? [String: Double]) ?? [:] }
@@ -125,6 +160,7 @@ final class ProtoState: ObservableObject {
         guard let api else { return }
         do {
             liveCalendars = try await api.listCalendars()
+            await flushPending()
             if activeCalendarId == nil { activeCalendarId = liveCalendars.first?.id }
             if let calId = activeCalendarId {
                 let cal = Calendar(identifier: .gregorian)

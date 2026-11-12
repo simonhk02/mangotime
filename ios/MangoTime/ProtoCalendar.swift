@@ -92,6 +92,18 @@ struct ProtoMonthScreen: View {
             }
             .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 10)
             .background(.bar)
+            if s.pendingCount > 0 {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.circle.fill").foregroundStyle(PT.orange)
+                    Text("\(s.pendingCount) 個活動未同步（離線暫存）").font(.caption).foregroundStyle(.primary)
+                    Spacer()
+                    Button { Task { await s.flushPending() } } label: {
+                        Text("重試").font(.caption).bold().foregroundStyle(PT.orange)
+                    }
+                }
+                .padding(.horizontal, 14).padding(.vertical, 8)
+                .background(PT.orange.opacity(0.1))
+            }
             Picker("", selection: $viewMode) {
                 Text("月曆").tag(0); Text("週曆").tag(1); Text("日").tag(2); Text("三日").tag(3)
             }
