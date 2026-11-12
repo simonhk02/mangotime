@@ -40,7 +40,7 @@ jobs:
           ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8_B64 }}
         run: |
           pip3 install --quiet --break-system-packages pyjwt cryptography 2>/dev/null || pip3 install --quiet --user pyjwt cryptography
-          python3 scripts/clean_ci_certs.py
+          python3 scripts/clean_ci_certs.py || echo "janitor failed — non-fatal, continue"
 
       - name: Install ASC API key for xcodebuild
         env:

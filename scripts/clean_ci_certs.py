@@ -21,13 +21,10 @@ def tok():
 def api(method, path):
     req = urllib.request.Request(f"https://api.appstoreconnect.apple.com{path}", method=method,
                                  headers={"Authorization": f"Bearer {tok()}", "Content-Type": "application/json"})
-    try:
-        with urllib.request.urlopen(req) as r:
-            return json.load(r)
-    except urllib.error.HTTPError as e:
-        if e.code == 204:
+    with urllib.request.urlopen(req) as r:
+        if r.status == 204 or method == "DELETE":
             return {}
-        raise
+        return json.load(r)
 
 data = api("GET", "/v1/certificates?limit=100")
 junk = [c for c in data.get("data", [])
