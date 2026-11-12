@@ -15,7 +15,7 @@ ISSUER = os.environ["ASC_ISSUER_ID"]
 key = base64.b64decode(os.environ["ASC_KEY_P8_B64"]).decode()
 
 def tok():
-    return jwt.encode({"iss": ISSUER_ID, "iat": int(time.time()), "exp": int(time.time()) + 900,
+    return jwt.encode({"iss": ISSUER, "iat": int(time.time()), "exp": int(time.time()) + 900,
                        "aud": "appstoreconnect-v1"}, key, algorithm="ES256", headers={"kid": KEY_ID, "typ": "JWT"})
 
 def api(method, path):
