@@ -389,21 +389,46 @@ struct ProtoRootView: View {
 
 struct SplashView: View {
     @EnvironmentObject var s: ProtoState
+    @State private var logoScale: CGFloat = 0.6
+    @State private var logoOpacity = 0.0
+    @State private var textUp = false
     var body: some View {
-        Button { withAnimation(.easeInOut(duration: 0.25)) { s.screen = .login } } label: {
-            VStack(spacing: 12) {
-                Spacer()
-                MangoLogo(size: 88)
-                Text("MangoTime").font(.largeTitle).bold()
-                Text("一齊夾時間").foregroundStyle(PT.soft)
-                Spacer()
-                Text("撳任何地方開始 ›").font(.footnote).foregroundStyle(PT.soft)
-                    .padding(.bottom, 60)
+        Button {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { s.screen = .login }
+        } label: {
+            ZStack {
+                // 柔和橙光背景（Apple 開場 feel）
+                RadialGradient(colors: [PT.orange.opacity(0.18), Color(.systemBackground)], center: .center, startRadius: 30, endRadius: 420)
+                    .ignoresSafeArea()
+                VStack(spacing: 12) {
+                    Spacer()
+                    MangoLogo(size: 96)
+                        .scaleEffect(logoScale)
+                        .opacity(logoOpacity)
+                        .shadow(color: PT.orange.opacity(0.35), radius: 24, y: 10)
+                    Text("MangoTime").font(.largeTitle).bold()
+                        .opacity(textUp ? 1 : 0)
+                        .offset(y: textUp ? 0 : 14)
+                    Text("一齊夾時間").foregroundStyle(PT.soft)
+                        .opacity(textUp ? 1 : 0)
+                        .offset(y: textUp ? 0 : 10)
+                    Spacer()
+                    Text("撳任何地方開始 ›").font(.footnote).foregroundStyle(PT.soft)
+                        .opacity(textUp ? 1 : 0)
+                        .padding(.bottom, 60)
+                }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color(.systemBackground))
         }
         .buttonStyle(.plain)
+        .onAppear {
+            withAnimation(.spring(response: 0.7, dampingFraction: 0.7)) {
+                logoScale = 1.0
+                logoOpacity = 1.0
+            }
+            withAnimation(.easeOut(duration: 0.5).delay(0.25)) {
+                textUp = true
+            }
+        }
     }
 }
 
