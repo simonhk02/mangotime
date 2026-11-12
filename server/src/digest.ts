@@ -41,14 +41,27 @@ export function startDigestLoop(prisma: PrismaClient) {
           orderBy: { startsAt: "asc" },
           take: 5,
         });
+        // 外部日曆（.ics 訂閱）今日有活動都提（攞 cache）
+        let extCount = 0;
+        try {
+          const { getExternalEventsForCalendars } = await import("./externals.js");
+          const ext = await getExternalEventsForCalendars(prisma, memberships.map((m) => m.calendarId));
+          extCount = ext.filter((e) => {
+            const d0 = new Date(e.startsAt as unknown as string);
+            return d0 >= dayStart && d0 <= dayEnd;
+          }).length;
+        } catch { /* 外曆掛咗唔影響 digest */ }
         const send = sender ?? (async (p, userId, title, body) => { await sendPushToUser(p, userId, title, body); });
-        if (events.length === 0) {
+        if (events.length === 0 && extCount === 0) {
           await send(prisma, u.id, "MangoTime", "今日冇行程，好好抖下 ☀️");
+        } else if (events.length === 0) {
+          await send(prisma, u.id, "今日行程", `今日有 ${extCount} 個外曆活動`);
         } else {
           const first = events[0];
           const time = first.allDay ? "全日" : first.startsAt.toISOString().slice(11, 16);
           const more = events.length > 1 ? ` 等 ${events.length} 個活動` : "";
-          await send(prisma, u.id, "今日行程", `${time} ${first.title}${more}`);
+          const extNote = extCount > 0 ? `（另有 ${extCount} 個外曆活動）` : "";
+          await send(prisma, u.id, "今日行程", `${time} ${first.title}${more}${extNote}`);
         }
       } catch (e) {
         console.error("[digest] user", u.id, e);

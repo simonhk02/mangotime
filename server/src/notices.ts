@@ -27,6 +27,11 @@ function summarize(type: string, payload: Record<string, unknown>): string {
     case "todo.list_created": return "開咗待辦清單";
     case "todo.item_done": return "完成咗一項待辦";
     case "photo.uploaded": return "上傳咗相片";
+    case "notice.announce": return String((payload as any).title ?? "公告");
+    case "event.rsvp": {
+      const st = (payload as any).status;
+      return st === "going" ? "話會參加一個活動" : "話唔去一個活動";
+    }
     default: return "";
   }
 }
@@ -44,7 +49,7 @@ export function registerNoticeRoutes(app: FastifyInstance, prisma: PrismaClient)
     if (calIds.length === 0) return reply.send({ notices: [] });
 
     const events = await prisma.outboxEvent.findMany({
-      where: { aggregateId: { in: calIds } },
+      where: { OR: [{ aggregateId: { in: calIds } }, { aggregateId: "global" }] },
       orderBy: { createdAt: "desc" },
       take: 80,
     });
@@ -75,5 +80,21 @@ export function registerNoticeRoutes(app: FastifyInstance, prisma: PrismaClient)
       if (notices.length >= 30) break;
     }
     return reply.send({ notices });
+  });
+
+  // 官方公告（淨係管理員 email 出得）→ outbox global + email 全體
+  app.post("/v1/admin/announce", async (req, reply) => {
+    const user = await requireUser(prisma, req, reply);
+    if (!user) return;
+    const adminEmails = (process.env.ADMIN_EMAILS ?? "simonhk02@gmail.com").split(",");
+    if (!adminEmails.includes(user.email)) return reply.code(403).send({ error: "admin only" });
+    const { title, body } = (req.body ?? {}) as { title?: string; body?: string };
+    if (!title?.trim()) return reply.code(400).send({ error: "title required" });
+    await prisma.outboxEvent.create({
+      data: { type: "notice.announce", aggregateId: "global", payload: JSON.stringify({ title, body: body ?? "", actorId: user.id }) },
+    });
+    const { broadcastNoticeEmail } = await import("./email.js");
+    const sent = await broadcastNoticeEmail(prisma, title.trim(), body ?? "");
+    return reply.code(201).send({ ok: true, emailed: sent });
   });
 }

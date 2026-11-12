@@ -122,8 +122,23 @@ async function fetchExternal(prisma: PrismaClient, ext: { id: string; url: strin
   }
 }
 
-export function registerExternalRoutes(app: FastifyInstance, prisma: PrismaClient) {
-  // 訂閱
+/** digest 用：攞晒幾個曆嘅外曆活動（用 cache，過期先 fetch） */
+export async function getExternalEventsForCalendars(prisma: PrismaClient, calendarIds: string[]): Promise<IcsEvent[]> {
+  const subs = await prisma.externalCalendar.findMany({ where: { calendarId: { in: calendarIds } } });
+  const out: IcsEvent[] = [];
+  for (const sub of subs) {
+    const stale = !sub.lastFetchedAt || Date.now() - sub.lastFetchedAt.getTime() > 15 * 60 * 1000;
+    if (stale) {
+      const fresh = await fetchExternal(prisma, sub);
+      if (fresh) out.push(...fresh);
+    } else if (sub.cachedEvents) {
+      try { out.push(...(JSON.parse(sub.cachedEvents) as IcsEvent[])); } catch { /* skip */ }
+    }
+  }
+  return out;
+}
+
+export function registerExternalRoutes(app: FastifyInstance, prisma: PrismaClient) {  // 訂閱
   app.post("/v1/calendars/:id/externals", async (req, reply) => {
     const user = await requireUser(prisma, req, reply);
     if (!user) return;
