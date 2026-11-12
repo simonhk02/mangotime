@@ -39,7 +39,7 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8_B64 }}
         run: |
-          pip3 install --quiet pyjwt
+          pip3 install --quiet --break-system-packages pyjwt 2>/dev/null || pip3 install --quiet --user pyjwt
           python3 scripts/clean_ci_certs.py
 
       - name: Install ASC API key for xcodebuild
