@@ -267,18 +267,9 @@ struct ProtoOther: View {
                     }
                     .buttonStyle(PressableStyle())
                     .padding(.top, 10)
-                    Button { s.screen = .premiumDetail } label: {
-                        HStack {
-                            Label("MangoTime Premium", systemImage: "star.fill").bold().foregroundStyle(PT.orange)
-                            Spacer()
-                            Text("了解詳情 ›").font(.caption).foregroundStyle(PT.soft).lineLimit(1)
-                        }
-                        .padding(14)
-                        .background(Color(.secondarySystemBackground))
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                    }
-                    .buttonStyle(PressableStyle())
-                    .padding(.vertical, 12)
+                    // Premium 卡：v1 唔開收費，收埋（見 ProtoPremiumDetail）
+                    // Button { s.screen = .premiumDetail } label: { ... }
+                    Color.clear.frame(height: 4)
                     PCard {
                         PRow(icon: "calendar", label: "行事曆清單") { s.screen = .calendarList }
                         PRow(icon: "doc.text", label: "備忘錄") { s.screen = .memos }
