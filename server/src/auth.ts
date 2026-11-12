@@ -92,6 +92,14 @@ export function registerAuthRoutes(app: FastifyInstance, prisma: PrismaClient) {
     return { user: publicUser(user) };
   });
 
+  // 已連結嘅 social 帳戶（apple/google）
+  app.get("/v1/me/socials", async (req, reply) => {
+    const user = await userFromRequest(prisma, req);
+    if (!user) return reply.code(401).send({ error: "unauthorized" });
+    const rows = await prisma.socialAccount.findMany({ where: { userId: user.id }, select: { provider: true, email: true } });
+    return reply.send({ socials: rows });
+  });
+
   app.patch("/v1/me", async (req, reply) => {
     const user = await userFromRequest(prisma, req);
     if (!user) return reply.code(401).send({ error: "unauthorized" });

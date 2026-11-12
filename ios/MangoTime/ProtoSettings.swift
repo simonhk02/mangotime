@@ -1,4 +1,5 @@
 import SwiftUI
+import StoreKit
 
 struct ProtoSettings: View {
     @EnvironmentObject var s: ProtoState
@@ -21,8 +22,10 @@ struct ProtoSettings: View {
         Group {
             Text("基本設定").font(.caption).foregroundStyle(PT.soft)
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 4)
-            PRow(label: "語言", value: "中文") { s.note("語言（mock）") }
-            PRow(label: "節日", value: "香港") { s.note("節日（mock）") }
+            PRow(label: "語言", value: "跟裝置設定") {
+                if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+            }
+            PRow(label: "公眾假期", value: s.holidaysOn ? "開" : "關") { s.holidaysOn.toggle() }
             PRow(icon: "display", label: "顯示設定") { s.screen = .displaySettings }
             PRow(icon: "line.3.horizontal.decrease", label: "篩選設定") { s.screen = .filterSettings }
             Text("通知").font(.caption).foregroundStyle(PT.soft)
@@ -30,9 +33,15 @@ struct ProtoSettings: View {
             PRow(icon: "bell", label: "通知設定") { s.screen = .notifSettings }
             Text("今日行程").font(.caption).foregroundStyle(PT.soft)
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 14)
-            PRow(label: "無行程的日子也通知", toggle: .constant(false))
-            PRow(label: "只通知有參加的行事", toggle: .constant(true))
-            PRow(label: "通知時間", value: "09:00") { s.note("通知時間（mock）") }
+            PRow(label: "無行程的日子也通知", toggle: Binding(
+                get: { s.api?.currentUser?.digestWhenEmpty ?? true },
+                set: { v in Task { try? await s.api?.updateMePrefs(digestWhenEmpty: v) } }
+            ))
+            PRow(label: "只通知有參加的行事", toggle: Binding(
+                get: { s.api?.currentUser?.notifyOnlyMine ?? false },
+                set: { v in Task { try? await s.api?.updateMePrefs(notifyOnlyMine: v) } }
+            ))
+            PRow(label: "通知時間", value: s.api?.currentUser?.digestTime ?? "08:00") { s.screen = .notifSettings }
         }
     }
 
@@ -47,9 +56,14 @@ struct ProtoSettings: View {
             PRow(icon: "envelope", label: "詢問") { s.screen = .contact }
             Text("社群").font(.caption).foregroundStyle(PT.soft)
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 14)
-            PRow(icon: "globe", label: "官方網站") { s.note("網站（mock）") }
-            PRow(icon: "at", label: "X / Twitter") { s.note("X（mock）") }
-            PRow(icon: "star", label: "喺 App Store 評分") { s.note("評分（mock）") }
+            PRow(icon: "globe", label: "官方網站") {
+                if let url = URL(string: "https://mangotime.149-28-154-219.sslip.io") { UIApplication.shared.open(url) }
+            }
+            PRow(icon: "star", label: "喺 App Store 評分") {
+                if let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
+                    SKStoreReviewController.requestReview(in: scene)
+                }
+            }
         }
     }
 }
@@ -244,7 +258,11 @@ struct ProtoNoticeDetail: View {
             """)
             .font(.subheadline)
             .padding(.top, 10)
-            Button { s.note("去評分（mock）") } label: {
+            Button {
+                if let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
+                    SKStoreReviewController.requestReview(in: scene)
+                }
+            } label: {
                 Text("去 App Store 評分").bold().foregroundStyle(.white)
                     .frame(maxWidth: .infinity).padding(.vertical, 12)
                     .background(PT.orange).clipShape(RoundedRectangle(cornerRadius: 10))

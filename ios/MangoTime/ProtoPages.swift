@@ -438,6 +438,7 @@ struct ShareSheet: UIViewControllerRepresentable {
 struct ProtoProfile: View {
     @EnvironmentObject var s: ProtoState
     @State private var editingName = false
+    @State private var linkedSocials: [String] = []
     @State private var nameDraft = ""
     @State private var birthday = Date()
     @State private var birthdayOn = false
@@ -454,6 +455,12 @@ struct ProtoProfile: View {
             }
             .frame(maxWidth: .infinity).padding(.vertical, 18)
             .onAppear {
+                Task {
+                    struct R: Codable { let socials: [MTSocial] }
+                    if let r: R = try? await s.api?.request("GET", "/v1/me/socials") {
+                        linkedSocials = r.socials.map { $0.provider == "apple" ? "Apple" : "Google" }
+                    }
+                }
                 if let bd = s.api?.currentUser?.birthdate {
                     birthdayOn = true
                     let f = DateFormatter(); f.dateFormat = "MM-dd"
@@ -492,7 +499,7 @@ struct ProtoProfile: View {
                         }
                 }
             }
-            PRow(label: "連結帳戶", value: "Google · Apple") { s.note("連結帳戶（mock）") }
+            PRow(label: "連結帳戶", value: linkedSocials.isEmpty ? "未連結" : linkedSocials.joined(separator: " · ")) { }
             Button {
                 if s.api != nil {
                     Task {

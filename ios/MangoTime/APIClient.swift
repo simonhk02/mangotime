@@ -204,6 +204,8 @@ struct MTPublicStats: Codable {
     let noindex: Bool
 }
 
+struct MTSocial: Codable, Hashable { let provider: String; let email: String? }
+
 struct MTBirthday: Codable, Hashable {
     let userId: String
     let displayName: String
