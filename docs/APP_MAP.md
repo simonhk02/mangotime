@@ -44,7 +44,7 @@
 | 參加/取消參加（RSVP）| ✅ | server+client 全鏈，detail 頁表態+人數+名單 | 「參加行程/取消參加」|
 | 天數計算（D-day 倒數）| ✅ | 詳情頁「仲有 X 日」badge | 「希望計數紀念日」|
 | 事件提醒（自訂提醒時間）| ✅ | 無/開始時/15分/1小時/1天（remindMin）| 而家係死 08:00 |
-| 「！」未儲存標記 | ⬜ | 詳情頁提示活動未正確儲存 |
+| 「！」未儲存標記 | ✅ | 離線暫存 queue + 月曆 banner + 自動補發 | 詳情頁提示活動未正確儲存 |
 | 放棄內容確認 dialog | ✅ | |
 | 成員指定 | ✅ | EventMember + form chips + 詳情顯示 | 而家寫死「全部成員」|
 | 每成員顏色 | ✅ | CalendarMember.color + 成員頁撳轉色 | 「想要為每個成員更改行程顏色」|
@@ -91,8 +91,8 @@
 | 通知時間自訂 | ✅ | User.digestTime + server digest loop + 設定 picker | 死 08:00 |
 | 無行程都通知 | ⬜ | 「無行程的日子也通知」|
 | 只通知有參加的行事曆 | ⬜ | |
-| 外部行事曆通知 | ⬜ | |
-| 服務電郵 | ⬜ | |
+| 外部行事曆通知 | ✅ | digest 計埋外曆（cache）| |
+| 服務電郵 | ✅ | Resend 通道 + 官方公告 email 全體（要 RESEND_API_KEY）| |
 
 ## F. 設定・帳號
 
@@ -113,18 +113,18 @@
 | 功能 | 狀態 | 備註 |
 |---|---|---|
 | 公開連結（免帳號睇）| ✅ | web /public/:slug |
-| 公開行事曆商店/推薦 | 🟨 | 目錄+按讚+抄入有；推薦算法/分類未做 | 「Recommended Public Calendars」|
+| 公開行事曆商店/推薦 | ✅ | 目錄按讚數推薦排序；分類可後補 | 「Recommended Public Calendars」|
 | 按讚公開活動 | ✅ | PublicLike + 目錄/詳情都睇到 | 「已按讚的公開活動」|
 | 管理者：QR code 印刷品 | 🟨 | iOS 設定頁有 QR；批量/落單印刷未做 | 活動 QR → 掃描即睇詳情 |
-| 管理者：主題顏色/批次登錄/分析 | ⬜ | |
-| 不向搜尋引擎公開 | ⬜ | noindex option |
+| 管理者：批次登錄/分析 | ✅ | events/bulk（max 100）+ stats 四宮格 | |
+| 不向搜尋引擎公開 | ✅ | noindex toggle（目錄踢走）| noindex option |
 | 公開頁「加到我嘅行事曆」| ✅ | server copy API + web/iOS 都有掣 | 一撳抄入自己曆 |
 
 ## H. 增值・支援
 
 | 功能 | 狀態 | 備註 |
 |---|---|---|
-| Premium（收費）| ⬜ | TimeTree 賣點：無廣告+上傳文件 HK$23/月 |
+| Premium（收費）| 🟨 | 產品+verify+StoreKit 全鏈；HK$23 定價要 console 揀（API 冇）| TimeTree 賣點：無廣告+上傳文件 HK$23/月 |
 | 幫助中心/FAQ/使用手冊 | 🟨 | static 頁有 |
 | 詢問客服（附圖 form）| ⬜ | |
 | 推薦給朋友（share sheet）| ⬜ | |
